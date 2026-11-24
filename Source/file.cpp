@@ -45,9 +45,9 @@ MATCH_FUNC(0x4A6BB0)
 bool __stdcall File::IsCdRomDrive_4A6BB0(char_type driveLetter)
 {
 #if defined(GTA2_MODERN_BUILD)
-    // Modern platforms have no legacy CD-ROM drive concept; report "not a CD".
+    // Modern platforms have no physical optical disc; the CD check always succeeds.
     (void)driveLetter;
-    return false;
+    return true;
 #else
     sprintf(gTmpBuffer_67C598, "%c:", driveLetter);
     // Silly return structure but needed to match (and somehow produces less code)
@@ -63,6 +63,17 @@ bool __stdcall File::IsCdRomDrive_4A6BB0(char_type driveLetter)
 MATCH_FUNC(0x4A6BE0)
 void __stdcall File::CheckReadOnlyFile_4A6BE0(const char_type* FileName, s32 expectedSize)
 {
+#if defined(GTA2_MODERN_BUILD)
+    // Modern platforms: audio may be compressed (OGG/FLAC/MP3) and the media is
+    // not write-protected, so the legacy size / read-only checks are skipped.
+    FILE* hFile = crt::fopen(FileName, "rb");
+    if (hFile)
+    {
+        (void)expectedSize;
+        crt::fclose(hFile);
+    }
+    return;
+#else
     FILE* hFile = crt::fopen(FileName, "rb");
     if (!hFile)
     {
@@ -85,6 +96,7 @@ void __stdcall File::CheckReadOnlyFile_4A6BE0(const char_type* FileName, s32 exp
     {
         FatalError_4A38C0(Gta2Error::SecurityFail, "C:\\Splitting\\Gta2\\Source\\File.cpp", 117);
     }
+#endif
 }
 
 MATCH_FUNC(0x4A6C80)
