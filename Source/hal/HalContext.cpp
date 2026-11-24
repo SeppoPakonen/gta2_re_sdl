@@ -1,0 +1,28 @@
+#include "HalContext.hpp"
+#include <cstdio>
+
+namespace gta2::hal {
+
+static HalContext sHalInstance;
+
+HalContext& GetHal() {
+    return sHalInstance;
+}
+
+bool HalContext::Initialize(const char* backendName) {
+    printf("[HAL] Initializing backend: %s\n", backendName ? backendName : "Default");
+    // Subsystem pointers will be wired up by specific backend initializers
+    return true;
+}
+
+void HalContext::Shutdown() {
+    if (pMovie)      { pMovie->Close(); }
+    if (pAudio)      { pAudio->Shutdown(); }
+    if (pRenderer)   { pRenderer->Shutdown(); }
+    if (pInput)      { pInput->Shutdown(); }
+    if (pWindow)     { pWindow->Shutdown(); }
+    if (pFileSystem) { pFileSystem->Shutdown(); }
+    printf("[HAL] Shutdown complete.\n");
+}
+
+} // namespace gta2::hal
