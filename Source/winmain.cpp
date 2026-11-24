@@ -1,3 +1,13 @@
+#if defined(GTA2_MODERN_BUILD)
+// Modern build: the engine entry point lives in Source/main.cpp (EngineRunner).
+// winmain.cpp's Win32 entry point (WinMain_5E53F0) and window procedure
+// (WindowProc_5E4EE0) are only used by the VC6 byte-matching build, so the whole
+// legacy body below is compiled out for modern cross-platform builds.
+void Gta2_CommonInit() {
+    // Subsystem initialization is performed by EngineRunner via the HAL.
+}
+#else
+
 #include "winmain.hpp"
 #include "hud_message_priority.hpp"
 #include "Bink.hpp"
@@ -2644,3 +2654,5 @@ EXPORT void __stdcall GetGTA2Version_5E5D60(s32* pVerMinor, s32* pVerMajor)
     }
     delete[] pAlloc;
 }
+
+#endif // !defined(GTA2_MODERN_BUILD)
