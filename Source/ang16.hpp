@@ -210,7 +210,11 @@ class Ang16
     // Ang16(const s16&, s32) below (9.6f 0x401C60). VC6 calls it instead of inlining in functions that
     // ran out of inline expansions. C++ can't declare the inline and the out-of-line copy of one
     // constructor, so the out-of-line one is reached through these overloads.
+#if defined(GTA2_MODERN_BUILD)
+    Ang16(const Ang16& input, s32 not_used)
+#else
     Ang16(Ang16& input, s32 not_used)
+#endif
     {
         AssignNormalized_409300(input.rValue, not_used);
     }
@@ -317,7 +321,11 @@ class Ang16
     }
 
     // 9.6f func: 0x401C40
+#if defined(GTA2_MODERN_BUILD)
+    Ang16(const Fix16& value, u8 zero)
+#else
     Ang16(Fix16& value, u8 zero)
+#endif
     {
         rValue = value.ToInt();
         Normalize();

@@ -2,8 +2,10 @@
 
 #include "Function.hpp"
 #include <math.h>
-#include <windows.h>
 #include <assert.h>
+#if !defined(GTA2_MODERN_BUILD)
+    #include <windows.h>
+#endif
 
 #ifndef INLINE_MODE
     #define INLINE_MODE __forceinline
@@ -348,7 +350,11 @@ class Fix16
     EXPORT static Fix16 __stdcall Max_44E540(const Fix16& lhs, const Fix16& rhs);
     // 9.6f 0x41E130, out-of-line copy Max_44E540. Small functions inline it (Ped_List::FindClosestActivePed_471340),
     // and as a site after the two Abs it sets their nested budget in MaxAbsDistance_42A6B0
+#if defined(GTA2_MODERN_BUILD)
+    inline static Fix16 __stdcall Max_41E130(const Fix16& a, const Fix16& b)
+#else
     inline static Fix16 __stdcall Max_41E130(Fix16& a, Fix16& b)
+#endif
     {
         if (a > b)
         {

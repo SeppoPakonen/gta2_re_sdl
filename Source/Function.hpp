@@ -1,6 +1,8 @@
 #pragma once
 
-#include "Globals.hpp"
+#if !defined(GTA2_MODERN_BUILD)
+    #include "Globals.hpp"
+#endif
 #include "types.hpp"
 
 #if _MSC_VER > 1200
@@ -12,7 +14,9 @@
 // compiled function. A naked/asm function leaves them off, an FPO function leaves them on as in the
 // original. See "How VC6 copies and merges block tails" in docs/matching_quirks.md.
 // Pattern: 0x90, 0x90 0xB8 [addr bytes x4] 0xB8 [status bytes x4] 0x90 0x90
-#define FUNC_MARKER_ASM(addr, status) __asm nop __asm nop __asm mov eax, addr __asm mov eax, status __asm nop __asm nop
+#if !defined(GTA2_MODERN_BUILD)
+    #define FUNC_MARKER_ASM(addr, status) __asm nop __asm nop __asm mov eax, addr __asm mov eax, status __asm nop __asm nop
+#endif
 
 // Variadic macros were added in C99, but this is not supported by VC6.
 // We need to use variadic args for the DEFINE_GLOBAL_ARRAY_INIT macro.
@@ -23,7 +27,32 @@
 // but not confuse the compiler with extra parameters.
 #define COMMA ,
 
-#if defined(_MSC_VER)
+#if defined(GTA2_MODERN_BUILD)
+    #define MATCH_FUNC(addr)
+    #define WIP_FUNC(addr)
+    #define STUB_FUNC(addr)
+    #define EXPORT
+    #define NOT_IMPLEMENTED do {} while(0)
+    #define WIP_IMPLEMENTED do {} while(0)
+    #define throw(...)
+
+    #define DEFINE_GLOBAL(type, name, addr) type name
+    #define DEFINE_STATIC_GLOBAL(type, name, addr) static type name
+    #define DEFINE_GLOBAL_INIT(type, name, value, addr) type name = value
+    #define DEFINE_GLOBAL_ARRAY(type, name, size, addr) type name[size]
+    #define DEFINE_GLOBAL_ARRAY_INIT(type, name, size, addr, ...) type name[size] = { __VA_ARGS__ }
+    #define EXTERN_GLOBAL(type, name) extern type name
+    #define EXTERN_GLOBAL_ARRAY(type, name, size) extern type name[size]
+
+    // On 64-bit architectures, struct sizes differ due to 8-byte pointer
+    // alignments, so the fixed 32-bit size assertions are omitted.
+    #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__arm64__)
+        #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) /* omitted on 64-bit */
+    #else
+        #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
+            static_assert(sizeof(structureName) == expectedSize, "sizeof(" #structureName ") mismatch");
+    #endif
+#elif defined(_MSC_VER)
     #define WIP_FUNC(addr)                                           \
         __declspec(naked) __declspec(dllexport) void Marker_##addr() \
         {                                                            \
@@ -195,17 +224,19 @@ void __stdcall LogFuncAddr(u32 codeAddr, s32 mode);
     #define EXTERN_GLOBAL_ARRAY(type, name, size) extern type name[size]
 #endif
 
-#if defined(_MSC_VER)
-    #if defined(__clang__) || (_MSC_VER <= 1200)
-        #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
-            typedef int static_assert_##structureName[sizeof(structureName) == expectedSize ? 1 : -1];
+#if !defined(GTA2_MODERN_BUILD)
+    #if defined(_MSC_VER)
+        #if defined(__clang__) || (_MSC_VER <= 1200)
+            #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
+                typedef int static_assert_##structureName[sizeof(structureName) == expectedSize ? 1 : -1];
+        #else
+            #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
+                static_assert(sizeof(structureName) == expectedSize, "sizeof(" #structureName ") must be " #expectedSize);
+        #endif
     #else
         #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
             static_assert(sizeof(structureName) == expectedSize, "sizeof(" #structureName ") must be " #expectedSize);
     #endif
-#else
-    #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
-        static_assert(sizeof(structureName) == expectedSize, "sizeof(" #structureName ") must be " #expectedSize);
 #endif
 
 #define GTA2_COUNTOF(x) (sizeof(x) / sizeof(*(x)))

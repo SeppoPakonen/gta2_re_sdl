@@ -1,6 +1,8 @@
 #include "fix16.hpp"
 #include "Function.hpp"
-#include "Globals.hpp"
+#if !defined(GTA2_MODERN_BUILD)
+    #include "Globals.hpp"
+#endif
 #include "ang16.hpp"
 #include <cmath>
 
