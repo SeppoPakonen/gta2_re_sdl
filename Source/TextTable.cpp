@@ -104,7 +104,7 @@ void TextTable::TDAT_Offsets2Strings_5B59B0(u8* pDat)
     for (u32 idx = 0; idx < static_cast<u32>(field_0_tKey.field_4_tKey_count); idx++)
     {
         // The raw file record is an offset, convert it to a pointer to the string data in the TDAT
-        const s32 offsetInBytes = reinterpret_cast<s32>(ptKeyIter->field_0_pwstr);
+        const s32 offsetInBytes = GTA2_PTR_TO_S32(ptKeyIter->field_0_pwstr);
         ptKeyIter->field_0_pwstr = reinterpret_cast<wchar_t*>(&pDat[offsetInBytes]);
         ptKeyIter++;
     }

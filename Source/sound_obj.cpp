@@ -1403,7 +1403,7 @@ MATCH_FUNC(0x413C50)
 void sound_obj::ProcessOtherCarTypes_413C50(Sound_Params* pParams, SoundPosEntry* pAlloc)
 {
     Car* pCar = pParams->field_0_pObj->field_8_car_bc_ptr;
-    pAlloc->field_4_car = reinterpret_cast<u32>(pCar); // TODO: Likely another union??
+    pAlloc->field_4_car = GTA2_PTR_TO_U32(pCar); // TODO: Likely another union??
     if (pCar->field_68_scale != kFpOne_66F3F4)
     {
         if (pCar->field_58_physics)
@@ -5268,7 +5268,7 @@ void sound_obj::ProcessOtherObjects_41F520(Sound_Params* pParams)
             {
                 return;
             }
-            rate_displacement = (reinterpret_cast<u32>(pParams) * 8) % 760;
+            rate_displacement = (GTA2_PTR_TO_U32(pParams) * 8) % 760;
             samp_idx = 30;
             volume = 85;
             emit_distance = Fix16(15) / Fix16(2);
@@ -5537,7 +5537,7 @@ void sound_obj::ProcessPed_422B70(Sound_Params* pParams)
             if (animation_state == 4 || animation_state == 1 || animation_state == 0)
             {
                 const char_type animation_frame = pChar->field_68_animation_frame;
-                if ((animation_frame == 1 || animation_frame == 5) && ((reinterpret_cast<s32>(pChar) + this->field_5448_m_FrameCounter) & 1) != 0)
+                if ((animation_frame == 1 || animation_frame == 5) && ((GTA2_PTR_TO_S32(pChar) + this->field_5448_m_FrameCounter) & 1) != 0)
                 {
                     switch (pChar->field_7C_pPed->field_254_block_spec)
                     {

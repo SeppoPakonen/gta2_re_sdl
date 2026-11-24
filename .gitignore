@@ -48,3 +48,8 @@ Source/_tu_harness_tmp*.cpp
 build.log
 dist/
 build_linux*
+.gradle/
+local.properties
+android/local.properties
+android/.gradle/
+android/app/build/

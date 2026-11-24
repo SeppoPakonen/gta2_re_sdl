@@ -466,7 +466,7 @@ void gtx_0x106C::SetSpriteIndexDataPtrs_5AAC40()
     {
         u8* pGraphicsOffset = this->field_20_sprite_index[i].field_0_pData;
         sprite_index* pSpriteIndex = &this->field_20_sprite_index[i];
-        pSpriteIndex->field_0_pData = &this->field_34_sprite_graphics[reinterpret_cast<u32>(pGraphicsOffset)];
+        pSpriteIndex->field_0_pData = &this->field_34_sprite_graphics[GTA2_PTR_TO_U32(pGraphicsOffset)];
     }
 }
 

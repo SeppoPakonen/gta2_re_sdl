@@ -44,14 +44,9 @@
     #define EXTERN_GLOBAL_ARRAY(type, name, size) extern type name[size]
     #define GLOBAL(var, addr)
 
-    // On 64-bit architectures, struct sizes differ due to 8-byte pointer
-    // alignments, so the fixed 32-bit size assertions are omitted.
-    #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__arm64__)
-        #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) /* omitted on 64-bit */
-    #else
-        #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) \
-            static_assert(sizeof(structureName) == expectedSize, "sizeof(" #structureName ") mismatch");
-    #endif
+    // On modern cross-platform builds, struct sizes differ due to pointer
+    // alignments and wchar_t sizes, so fixed VC6 size assertions are omitted.
+    #define GTA2_ASSERT_SIZEOF_ALWAYS(structureName, expectedSize) /* omitted in modern build */
 #elif defined(_MSC_VER)
     #define WIP_FUNC(addr)                                           \
         __declspec(naked) __declspec(dllexport) void Marker_##addr() \

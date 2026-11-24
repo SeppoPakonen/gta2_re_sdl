@@ -21,6 +21,11 @@ typedef double f64;
 #if defined(GTA2_MODERN_BUILD)
     typedef uint64_t u64;
     typedef int64_t  s64;
+    #define GTA2_PTR_TO_S32(p) static_cast<s32>(reinterpret_cast<uintptr_t>(p))
+    #define GTA2_PTR_TO_U32(p) static_cast<u32>(reinterpret_cast<uintptr_t>(p))
+#else
+    #define GTA2_PTR_TO_S32(p) reinterpret_cast<s32>(p)
+    #define GTA2_PTR_TO_U32(p) reinterpret_cast<u32>(p)
 #endif
 
 // Endianness abstraction. File formats (.GMP/.STY/.SCR/.GXT) are little-endian;
@@ -73,7 +78,7 @@ typedef double f64;
     #endif
     #ifndef wsprintfA
         #include <cstdio>
-        #define wsprintfA snprintf
+        #define wsprintfA sprintf
     #endif
     #if !defined(_WIN32)
         #ifndef _itoa

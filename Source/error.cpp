@@ -1696,7 +1696,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "Invalid relative sprite number %d in %s", reinterpret_cast<s32>(va_2), va_2);
+            sprintf(gTmpBuffer_67C598, "Invalid relative sprite number %d in %s", GTA2_PTR_TO_S32(va_2), va_2);
             break;
         }
 
@@ -1704,7 +1704,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "Invalid relative virtual palette number %d in %s", reinterpret_cast<s32>(va_2), va_2);
+            sprintf(gTmpBuffer_67C598, "Invalid relative virtual palette number %d in %s", GTA2_PTR_TO_S32(va_2), va_2);
             break;
         }
 
@@ -1834,7 +1834,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "model %d repeated in %s", reinterpret_cast<s32>(va_2), SourceFileNameFromPath_4A07A0(va_2));
+            sprintf(gTmpBuffer_67C598, "model %d repeated in %s", GTA2_PTR_TO_S32(va_2), SourceFileNameFromPath_4A07A0(va_2));
             break;
         }
 
@@ -1846,7 +1846,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "%s invalid size at %d bytes", SourceFileNameFromPath_4A07A0(va_2), reinterpret_cast<s32>(va_2));
+            sprintf(gTmpBuffer_67C598, "%s invalid size at %d bytes", SourceFileNameFromPath_4A07A0(va_2), GTA2_PTR_TO_S32(va_2));
             break;
         }
 
@@ -1854,7 +1854,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "car ID %d in collision with %s sprite at safe position", reinterpret_cast<s32>(va_2), va_2);
+            sprintf(gTmpBuffer_67C598, "car ID %d in collision with %s sprite at safe position", GTA2_PTR_TO_S32(va_2), va_2);
             break;
         }
 
@@ -1862,7 +1862,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
         {
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
-            sprintf(gTmpBuffer_67C598, "objecct ID %d in collision with %s sprite at safe position", reinterpret_cast<s32>(va_2), va_2);
+            sprintf(gTmpBuffer_67C598, "objecct ID %d in collision with %s sprite at safe position", GTA2_PTR_TO_S32(va_2), va_2);
             break;
         }
 
@@ -1943,7 +1943,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Videomode %dx%dx%d is not available", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Videomode %dx%dx%d is not available", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1952,7 +1952,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Failed to set videomode %dx%dx%d", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Failed to set videomode %dx%dx%d", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1961,7 +1961,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Can't delete sprite %d from collision list at : %d,%d", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Can't delete sprite %d from collision list at : %d,%d", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1970,7 +1970,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Adding sprite %d to collision list twice at : %d,%d", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Adding sprite %d to collision list twice at : %d,%d", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1979,7 +1979,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "invalid map access : (%d,%d,%d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "invalid map access : (%d,%d,%d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1988,7 +1988,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "invalid map change access : (%d,%d,%d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "invalid map change access : (%d,%d,%d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -1997,7 +1997,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Invalid palette type %d for sprite type %d, number %d", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Invalid palette type %d for sprite type %d, number %d", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2006,7 +2006,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Invalid sprite type %d number %d remap %d", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Invalid sprite type %d number %d remap %d", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2017,9 +2017,9 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32* va_3 = va_arg(va, s32*);
             sprintf(gTmpBuffer_67C598,
                     "%d models in %s but %d models in style",
-                    reinterpret_cast<s32>(va_3),
+                    GTA2_PTR_TO_S32(va_3),
                     SourceFileNameFromPath_4A07A0(reinterpret_cast<const char_type*>(va_3)),
-                    reinterpret_cast<s32>(va_3));
+                    GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2028,7 +2028,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Invalid block in train code : (%d,%d,%d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Invalid block in train code : (%d,%d,%d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2037,7 +2037,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Train on a block with incorrect arrow : (%d,%d,%d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Train on a block with incorrect arrow : (%d,%d,%d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2046,7 +2046,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Attempting to disable road at illegal coordinates: check Z! ( %d, %d, %d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Attempting to disable road at illegal coordinates: check Z! ( %d, %d, %d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2055,7 +2055,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Attempting to enable road at illegal coordinates: check Z! ( %d, %d, %d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Attempting to enable road at illegal coordinates: check Z! ( %d, %d, %d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2064,7 +2064,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Illegal block for train creation. Coordinates: check stopzone! ( %d, %d, %d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Illegal block for train creation. Coordinates: check stopzone! ( %d, %d, %d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2073,7 +2073,7 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32 va_1 = va_arg(va, s32);
             const char_type* va_2 = va_arg(va, const char_type*);
             s32* va_3 = va_arg(va, s32*);
-            sprintf(gTmpBuffer_67C598, "Failed to create carriage at: (%d, %d, %d)", reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3), reinterpret_cast<s32>(va_3));
+            sprintf(gTmpBuffer_67C598, "Failed to create carriage at: (%d, %d, %d)", GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3), GTA2_PTR_TO_S32(va_3));
             break;
         }
 
@@ -2084,9 +2084,9 @@ EXPORT void FatalError_4A07C0(s32 code, const char_type* pFileName, s32 lineNo, 
             s32* va_3 = va_arg(va, s32*);
             sprintf(gTmpBuffer_67C598,
                     "Error in set-up of park command. Walls intruding on the park's triggerspace! Door coords: (%d, %d, %d)",
-                    reinterpret_cast<s32>(va_3),
-                    reinterpret_cast<s32>(va_3),
-                    reinterpret_cast<s32>(va_3));
+                    GTA2_PTR_TO_S32(va_3),
+                    GTA2_PTR_TO_S32(va_3),
+                    GTA2_PTR_TO_S32(va_3));
             break;
         }
 

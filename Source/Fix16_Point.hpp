@@ -135,7 +135,7 @@ class Fix16_Point
     }
 
     // But also 0x40ACD0 non inlined in 10.5
-    Ang16 atan2_40F790()
+    Ang16 atan2_40F790() const
     {
         return Fix16::atan2_fixed_405320(y, x);
     }
@@ -540,7 +540,7 @@ class Fix16_Point
 #endif
 
     // GetLength_41E260 as inlined into NormalizeSafe_442AD0 (out of line helpers where the inline budget ran out)
-    inline Fix16 GetLength_inline_442AD0()
+    inline Fix16 GetLength_inline_442AD0() const
     {
         if (x == gFix16_6777CC)
         {
@@ -566,7 +566,7 @@ class Fix16_Point
 
     // GetLength_41E260 as inlined into CarPhysics::CalculateRearWheelForce_5620D0: Abs and x*x out of line
     // by the inline budget, y*y written out inline (the plain y * y changes the function)
-    inline Fix16 GetLength_inline_5620D0()
+    inline Fix16 GetLength_inline_5620D0() const
     {
         if (x == kFP16Zero_6FE20C)
         {
@@ -583,7 +583,7 @@ class Fix16_Point
     }
 
     // Same, for the scaled point in NormalizeSafe_442AD0
-    inline Fix16 GetLength_scaled_inline_442AD0()
+    inline Fix16 GetLength_scaled_inline_442AD0() const
     {
         if (x == gFix16_6777CC)
         {

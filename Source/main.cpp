@@ -1,5 +1,14 @@
 #include "EngineRunner.hpp"
 
+#if defined(__ANDROID__) || defined(ANDROID)
+    #if defined(GTA2_USE_SDL2)
+        #include <SDL.h>
+    #elif defined(GTA2_USE_SDL3)
+        #include <SDL3/SDL.h>
+        #include <SDL3/SDL_main.h>
+    #endif
+#endif
+
 #if defined(__EMSCRIPTEN__)
     #include <emscripten.h>
 

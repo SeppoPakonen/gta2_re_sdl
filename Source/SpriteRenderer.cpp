@@ -3,6 +3,9 @@
 #include "enums.hpp"
 #include "error.hpp"
 #include "sprite.hpp"
+#if defined(GTA2_MODERN_BUILD)
+#include "hal/HalContext.hpp"
+#endif
 
 // Forward declarations: the functions below are in address order
 EXPORT s32 get_rdtsc_5BEE90();
