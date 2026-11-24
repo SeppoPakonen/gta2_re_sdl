@@ -371,10 +371,37 @@ else()
 
     # Find SDL packages
     if(GTA2_BACKEND STREQUAL "SDL2")
-        find_package(SDL2 REQUIRED)
+        find_package(SDL2 QUIET)
+        if(NOT TARGET SDL2::SDL2)
+            if(WIN32)
+                include(FetchContent)
+                set(SDL_TEST_ENABLED_BY_DEFAULT OFF)
+                FetchContent_Declare(
+                    SDL2
+                    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+                    GIT_TAG release-2.30.12
+                )
+                FetchContent_MakeAvailable(SDL2)
+            else()
+                find_package(SDL2 REQUIRED)
+            endif()
+        endif()
         add_compile_definitions(GTA2_USE_SDL2)
     elseif(GTA2_BACKEND STREQUAL "SDL3")
-        find_package(SDL3 REQUIRED)
+        find_package(SDL3 QUIET)
+        if(NOT TARGET SDL3::SDL3)
+            if(WIN32)
+                include(FetchContent)
+                FetchContent_Declare(
+                    SDL3
+                    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+                    GIT_TAG preview-3.1.6
+                )
+                FetchContent_MakeAvailable(SDL3)
+            else()
+                find_package(SDL3 REQUIRED)
+            endif()
+        endif()
         add_compile_definitions(GTA2_USE_SDL3)
     elseif(GTA2_BACKEND STREQUAL "HEADLESS")
         add_compile_definitions(GTA2_USE_HEADLESS)
@@ -406,6 +433,8 @@ else()
     target_compile_definitions(gta2_core PUBLIC GTA2_MODERN_BUILD)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(gta2_core PRIVATE -fpermissive -Wno-write-strings)
+    elseif(MSVC)
+        target_compile_options(gta2_core PRIVATE /W3 /permissive-)
     endif()
 
     # The HAL library (gta2_hal) is provided by Source/hal, added by a later task.
@@ -415,7 +444,11 @@ else()
 
     # The game executable is wired in once Source/main.cpp exists (added by a later task).
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Source/main.cpp" AND TARGET gta2_hal)
-        add_executable(gta2 Source/main.cpp)
+        set(GTA2_EXE_SOURCES Source/main.cpp)
+        if(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources.rc")
+            list(APPEND GTA2_EXE_SOURCES resources.rc)
+        endif()
+        add_executable(gta2 ${GTA2_EXE_SOURCES})
         target_link_libraries(gta2 PRIVATE gta2_core gta2_hal)
 
         if(GTA2_BACKEND STREQUAL "SDL2")

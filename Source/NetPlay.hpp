@@ -3,12 +3,14 @@
 #include "Function.hpp"
 #include "Game.hpp"
 #if defined(GTA2_MODERN_BUILD)
+#if !defined(_WIN32)
 typedef struct {
     unsigned long  Data1;
     unsigned short Data2;
     unsigned short Data3;
     unsigned char  Data4[ 8 ];
 } GUID;
+#endif
 
 class NetPlay {
 public:

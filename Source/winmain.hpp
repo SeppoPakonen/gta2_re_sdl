@@ -3,16 +3,6 @@
 #include "Function.hpp"
 #if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
-#else
-typedef const char* LPCSTR;
-typedef void* HWND;
-typedef unsigned int UINT;
-typedef unsigned long WPARAM;
-typedef long LPARAM;
-typedef long LRESULT;
-typedef unsigned char BYTE;
-typedef void* HINSTANCE;
-typedef char* LPSTR;
 #endif
 
 EXPORT void Start_GTA2Manager_5E4DE0();

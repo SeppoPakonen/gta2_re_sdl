@@ -75,21 +75,23 @@ typedef double f64;
         #include <cstdio>
         #define wsprintfA snprintf
     #endif
-    #ifndef _itoa
-        inline char* _itoa(int val, char* buf, int radix) {
-            if (radix == 16) sprintf(buf, "%x", val);
-            else if (radix == 8) sprintf(buf, "%o", val);
-            else sprintf(buf, "%d", val);
-            return buf;
-        }
-    #endif
-    #ifndef _itow
-        inline wchar_t* _itow(int val, wchar_t* buf, int radix) {
-            if (radix == 16) swprintf(buf, L"%x", val);
-            else if (radix == 8) swprintf(buf, L"%o", val);
-            else swprintf(buf, L"%d", val);
-            return buf;
-        }
+    #if !defined(_WIN32)
+        #ifndef _itoa
+            inline char* _itoa(int val, char* buf, int radix) {
+                if (radix == 16) sprintf(buf, "%x", val);
+                else if (radix == 8) sprintf(buf, "%o", val);
+                else sprintf(buf, "%d", val);
+                return buf;
+            }
+        #endif
+        #ifndef _itow
+            inline wchar_t* _itow(int val, wchar_t* buf, int radix) {
+                if (radix == 16) swprintf(buf, L"%x", val);
+                else if (radix == 8) swprintf(buf, L"%o", val);
+                else swprintf(buf, L"%d", val);
+                return buf;
+            }
+        #endif
     #endif
     #ifndef _strnicmp
         #define _strnicmp strncasecmp
@@ -100,9 +102,11 @@ typedef double f64;
     #ifndef _stdcall
         #define _stdcall __stdcall
     #endif
-    typedef unsigned int UINT;
-    typedef uintptr_t UINT_PTR;
-    typedef void* LPVOID;
+    #if !defined(_WIN32)
+        typedef unsigned int UINT;
+        typedef uintptr_t UINT_PTR;
+        typedef void* LPVOID;
+    #endif
 
 #if !defined(_WIN32)
 #include <dirent.h>
@@ -198,8 +202,17 @@ inline int _findclose(long handle) {
 #endif
 #endif
 
-// Portable fallbacks for legacy Windows types
-#if !defined(_WIN32) && !defined(WINDOWS)
+#if defined(_WIN32)
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #include <windows.h>
+    #include <io.h>
+#elif !defined(WINDOWS)
+    // Portable fallbacks for legacy Windows types
     typedef u8   BYTE;
     typedef u16  WORD;
     typedef u32  DWORD;
