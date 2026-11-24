@@ -11,6 +11,7 @@ add_library(gta2_hal STATIC
     AudioContainerParser.cpp
     SDLAudioBackend.cpp
     AudioMixer3D.cpp
+    VirtualTouchpad.cpp
     SDLInputBackend.cpp
     InputKeyMap.cpp
 )
