@@ -4,7 +4,9 @@
 #include "ang16.hpp"
 #include "fix16.hpp"
 #include "root_sound.hpp" // for SoundObject
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 class Car;
 class Object;

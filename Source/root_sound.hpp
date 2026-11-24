@@ -3,7 +3,9 @@
 #include "Function.hpp"
 #include "SoundObject.hpp"
 #include "fix16.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 class root_sound
 {

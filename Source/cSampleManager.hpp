@@ -1,7 +1,18 @@
 #pragma once
 
+#if !defined(GTA2_MODERN_BUILD)
 #include "3rdParty/mss.h"
+#endif
+
 #include "Function.hpp"
+
+#if defined(GTA2_MODERN_BUILD)
+typedef void* HDIGDRIVER;
+typedef void* HSAMPLE;
+typedef void* HSTREAM;
+typedef void* HPROVIDER;
+typedef void* H3DSAMPLE;
+#endif
 
 struct SdtEntry
 {

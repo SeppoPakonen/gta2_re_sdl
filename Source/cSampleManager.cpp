@@ -2,6 +2,11 @@
 #include "Function.hpp"
 #include "Globals.hpp"
 #include <stdio.h>
+#if defined(GTA2_MODERN_BUILD)
+#include "hal/HalContext.hpp"
+#include "hal/IAudioBackend.hpp"
+#include "hal/AudioContainerParser.hpp"
+#endif
 
 DEFINE_GLOBAL(cSampleManager, gSampManager_6FFF00, 0x6FFF00);
 
@@ -109,6 +114,7 @@ const voc_name gVocNames_5FEA5C[98] = {{"accuracyb.wav"},
                                        {"laughc.wav"},
                                        {"laughd.wav"}};
 
+#if !defined(GTA2_MODERN_BUILD)
 MATCH_FUNC(0x58D430)
 cSampleManager::cSampleManager()
 {
@@ -1155,3 +1161,48 @@ bool cSampleManager::LoadWavSdtData_58E980(const char_type* pRawOrSdtName)
     field_A4_bLoaded = true;
     return true;
 }
+#else // GTA2_MODERN_BUILD
+
+bool cSampleManager::SoundInit_58D6C0(s32* /*not_used*/)
+{
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (!pAudio) {
+        return false;
+    }
+
+    // Load samples from SDT/RAW via AudioContainerParser and register with HAL audio.
+    const char_type* audioFiles[] = {
+        "data\\audio\\wil.sdt", "data\\audio\\bill.sdt",
+        "data\\audio\\scream.sdt", "data\\audio\\gun.sdt",
+        "data\\audio\\explode.sdt"
+    };
+    std::vector<std::pair<std::string, std::string>> filePairs;
+    for (const char_type* sdtName : audioFiles) {
+        filePairs.emplace_back(sdtName, sdtName);
+    }
+
+    bool anyLoaded = false;
+    for (const auto& [sdtPath, rawPath] : filePairs) {
+        std::vector<gta2::hal::LoadedSoundSample> samples;
+        if (gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples)) {
+            for (auto& sample : samples) {
+                pAudio->LoadSampleFromMemory(sample.pcmData.data(), sample.pcmData.size(),
+                                             sample.desc.playbackRate, sample.bitsPerSample,
+                                             sample.channels);
+            }
+            anyLoaded = true;
+        }
+    }
+    field_A4_bLoaded = anyLoaded;
+    return anyLoaded;
+}
+
+void cSampleManager::PlaySampleRange_58E8C0(u32 idx, u32 /*end_idx*/)
+{
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (pAudio) {
+        pAudio->PlaySample(static_cast<gta2::hal::SoundId>(idx), 1.0f, 0.0f, false);
+    }
+}
+
+#endif // GTA2_MODERN_BUILD
