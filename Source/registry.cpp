@@ -1,5 +1,336 @@
 #include "registry.hpp"
 #include "Function.hpp"
+
+#if defined(GTA2_MODERN_BUILD)
+
+#include "hal/HalContext.hpp"
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+DEFINE_GLOBAL(Registry, gRegistry_6FF968, 0x6FF968);
+
+MATCH_FUNC(0x586A00)
+bool Registry::Open_Sound_Root_586A00(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x586A70)
+bool Registry::Sound_Setting_Exists_586A70(const char_type* lpValueName)
+{
+    return gta2::hal::GetHal().pConfig && gta2::hal::GetHal().pConfig->HasKey("Sound", lpValueName);
+}
+
+MATCH_FUNC(0x586AE0)
+s32 Registry::Get_Sound_Setting_586AE0(const char_type* lpValueName, s32 value)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        return gta2::hal::GetHal().pConfig->GetInt("Sound", lpValueName, value);
+    }
+    return value;
+}
+
+MATCH_FUNC(0x586B80)
+void Registry::Set_Sound_Setting_586B80(const char_type* lpValueName, s32 Data)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        gta2::hal::GetHal().pConfig->SetInt("Sound", lpValueName, Data);
+    }
+}
+
+MATCH_FUNC(0x586BF0)
+void Registry::Clear_Or_Delete_Sound_Setting_586BF0(const char_type* lpValueName, char_type bClear)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        if (bClear)
+        {
+            gta2::hal::GetHal().pConfig->SetInt("Sound", lpValueName, 0);
+        }
+        else
+        {
+            gta2::hal::GetHal().pConfig->DeleteKey("Sound", lpValueName);
+        }
+    }
+}
+
+MATCH_FUNC(0x586C60)
+bool Registry::Open_Debug_Root_586C60(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x586CD0)
+bool Registry::Open_Options_Root_586CD0(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x586D40)
+bool Registry::Open_Control_Root_586D40(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x586DB0)
+bool Registry::Open_Screen_Root_586DB0(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x586E20)
+bool Registry::Debug_Setting_Exists_586E20(const char_type* lpValueName)
+{
+    return gta2::hal::GetHal().pConfig && gta2::hal::GetHal().pConfig->HasKey("Debug", lpValueName);
+}
+
+MATCH_FUNC(0x586E90)
+void Registry::Get_Debug_Setting_586E90(const char_type* lpValueName, LPBYTE lpData, s32 data_size)
+{
+    if (gta2::hal::GetHal().pConfig && lpData && data_size > 0)
+    {
+        std::string s = gta2::hal::GetHal().pConfig->GetString("Debug", lpValueName, "");
+        size_t n = s.size();
+        if (n > static_cast<size_t>(data_size))
+        {
+            n = static_cast<size_t>(data_size);
+        }
+        memcpy(lpData, s.data(), n);
+    }
+}
+
+MATCH_FUNC(0x586F00)
+void Registry::Get_Option_586F00(const char_type* lpValueName, BYTE* pBuffer, s32 bufferSize)
+{
+    if (pBuffer && bufferSize > 0)
+    {
+        pBuffer[0] = 0;
+    }
+    if (gta2::hal::GetHal().pConfig && pBuffer && bufferSize > 1)
+    {
+        std::string s = gta2::hal::GetHal().pConfig->GetString("Option", lpValueName, "");
+        size_t n = s.size();
+        if (n > static_cast<size_t>(bufferSize - 1))
+        {
+            n = static_cast<size_t>(bufferSize - 1);
+        }
+        memcpy(pBuffer, s.data(), n);
+        pBuffer[n] = 0;
+    }
+}
+
+MATCH_FUNC(0x586F70)
+s32 Registry::Get_Option_Int_586F70(const char_type* lpValueName, s32 value)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        return gta2::hal::GetHal().pConfig->GetInt("Option", lpValueName, value);
+    }
+    return value;
+}
+
+MATCH_FUNC(0x587010)
+s32 Registry::Get_Control_Setting_587010(s32 control_idx, s32 value)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        std::string key = std::to_string(static_cast<s32>(static_cast<BYTE>(control_idx)));
+        return gta2::hal::GetHal().pConfig->GetInt("Control", key.c_str(), value);
+    }
+    return value;
+}
+
+MATCH_FUNC(0x5870D0)
+s32 Registry::Get_Screen_Setting_5870D0(const char_type* lpValueName, s32 default_value)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        return gta2::hal::GetHal().pConfig->GetInt("Screen", lpValueName, default_value);
+    }
+    return default_value;
+}
+
+MATCH_FUNC(0x587170)
+void Registry::Set_Screen_Setting_587170(const char_type* lpValueName, s32 Data)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        gta2::hal::GetHal().pConfig->SetInt("Screen", lpValueName, Data);
+    }
+}
+
+MATCH_FUNC(0x5871E0)
+void Registry::Get_Screen_String_5871E0(const char_type* lpValueName, BYTE* lpData, u16 maxLen)
+{
+    if (!lpData || maxLen == 0)
+    {
+        return;
+    }
+    if (gta2::hal::GetHal().pConfig)
+    {
+        std::string s = gta2::hal::GetHal().pConfig->GetString("Screen", lpValueName, "");
+        size_t n = s.size();
+        if (n > static_cast<size_t>(maxLen - 1))
+        {
+            n = static_cast<size_t>(maxLen - 1);
+        }
+        memcpy(lpData, s.data(), n);
+        lpData[n] = 0;
+    }
+    else
+    {
+        lpData[0] = 0;
+    }
+}
+
+MATCH_FUNC(0x587290)
+void Registry::null_587290()
+{
+}
+
+MATCH_FUNC(0x5872A0)
+bool Registry::Set_Binary_5872A0(HKEY hKey, const char_type* base_name, const BYTE* lpData, u32 size)
+{
+    (void)hKey;
+    (void)base_name;
+    (void)lpData;
+    (void)size;
+    return true;
+}
+
+MATCH_FUNC(0x587340)
+bool Registry::Get_Binary_587340(HKEY hKey, const char_type* keyPath, s32 expectedSize, LPBYTE lpData)
+{
+    (void)hKey;
+    (void)keyPath;
+    (void)expectedSize;
+    (void)lpData;
+    return false;
+}
+
+MATCH_FUNC(0x5873E0)
+s32 Registry::Get_Binary_Size_5873E0(HKEY hKey, const char_type* subKey)
+{
+    (void)hKey;
+    (void)subKey;
+    return 0;
+}
+
+MATCH_FUNC(0x587420)
+bool Registry::CreateNetworkRoot_587420(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x5874E0)
+DWORD Registry::Get_Int_Setting_5874E0(HKEY hKey, const char_type* lpValueName)
+{
+    (void)hKey;
+    (void)lpValueName;
+    return 0;
+}
+
+MATCH_FUNC(0x5875A0)
+s32 __stdcall Registry::Get_Binary_Value_5875A0(HKEY hKey, const char_type* keyPath, LPBYTE lpData)
+{
+    (void)hKey;
+    (void)keyPath;
+    (void)lpData;
+    return 0;
+}
+
+MATCH_FUNC(0x5875E0)
+s32 __stdcall Registry::Set_WString_Value_5875E0(HKEY hKey, const char_type* keyPath, const wchar_t* pStr)
+{
+    (void)hKey;
+    (void)keyPath;
+    (void)pStr;
+    return 0;
+}
+
+MATCH_FUNC(0x587620)
+bool Registry::Network_Setting_Exists_587620(const char_type* lpValueName)
+{
+    return gta2::hal::GetHal().pConfig && gta2::hal::GetHal().pConfig->HasKey("Network", lpValueName);
+}
+
+MATCH_FUNC(0x587690)
+s32 Registry::Get_Network_Setting_587690(const char_type* lpValueName, s32 value)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        return gta2::hal::GetHal().pConfig->GetInt("Network", lpValueName, value);
+    }
+    return value;
+}
+
+MATCH_FUNC(0x587730)
+void Registry::Set_Network_Setting_587730(const char_type* lpValueName, BYTE Data)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        gta2::hal::GetHal().pConfig->SetInt("Network", lpValueName, static_cast<s32>(Data));
+    }
+}
+
+MATCH_FUNC(0x5877A0)
+bool Registry::Open_Player_Root_5877A0(PHKEY phkResult)
+{
+    if (phkResult)
+    {
+        *phkResult = nullptr;
+    }
+    return true;
+}
+
+MATCH_FUNC(0x587810)
+DWORD Registry::Get_Player_Setting_587810(const char_type* lpValueName)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        return static_cast<DWORD>(gta2::hal::GetHal().pConfig->GetInt("Player", lpValueName, 0));
+    }
+    return 0;
+}
+
+MATCH_FUNC(0x5878C0)
+void Registry::Set_Player_Setting_5878C0(const char_type* lpValueName, DWORD Data)
+{
+    if (gta2::hal::GetHal().pConfig)
+    {
+        gta2::hal::GetHal().pConfig->SetInt("Player", lpValueName, static_cast<s32>(Data));
+    }
+}
+
+#else
+
 #include "Globals.hpp"
 #include "error.hpp"
 #include "stdafx.h"
@@ -633,3 +964,5 @@ void Registry::Set_Player_Setting_5878C0(const char_type* lpValueName, DWORD Dat
         FatalError_4A38C0(Gta2Error::CloseRegistryKeyFail, "C:\\Splitting\\Gta2\\Source\\registry.cpp", 1177);
     }
 }
+
+#endif

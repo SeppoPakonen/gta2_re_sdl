@@ -76,6 +76,10 @@ typedef double f64;
     typedef void* HMODULE;
     typedef void* HANDLE;
     typedef s32  HRESULT;
+    typedef void* HKEY;
+    typedef HKEY* PHKEY;
+    typedef BYTE* LPBYTE;
+    typedef DWORD* LPDWORD;
     typedef char* LPSTR;
     typedef const char* LPCSTR;
     #define TRUE 1

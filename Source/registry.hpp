@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Function.hpp"
-#include <windows.h>
+#if !defined(GTA2_MODERN_BUILD) || defined(_WIN32)
+    #include <windows.h>
+#endif
 
 class Registry
 {
