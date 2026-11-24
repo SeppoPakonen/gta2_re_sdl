@@ -54,6 +54,15 @@ typedef double f64;
     #ifndef __forceinline
         #define __forceinline inline
     #endif
+    #ifndef __cdecl
+        #define __cdecl
+    #endif
+    #ifndef __fastcall
+        #define __fastcall
+    #endif
+    #ifndef __declspec
+        #define __declspec(x)
+    #endif
 #endif
 
 // Portable fallbacks for legacy Windows types
@@ -66,6 +75,7 @@ typedef double f64;
     typedef void* HWND;
     typedef void* HMODULE;
     typedef void* HANDLE;
+    typedef s32  HRESULT;
     typedef char* LPSTR;
     typedef const char* LPCSTR;
     #define TRUE 1

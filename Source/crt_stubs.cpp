@@ -1,6 +1,10 @@
 #include "crt_stubs.hpp"
 #include "Function.hpp"
 #include <memory>
+#if defined(GTA2_MODERN_BUILD)
+    #include "hal/HalContext.hpp"
+    #include <string>
+#endif
 
 namespace crt
 {
@@ -37,6 +41,13 @@ int __cdecl fclose(FILE* f)
 STUB_FUNC(0x5EE4E4);
 FILE* __cdecl fopen(const char* FileName, const char* Mode)
 {
+#if defined(GTA2_MODERN_BUILD)
+    if (gta2::hal::GetHal().pFileSystem)
+    {
+        std::string resolved = gta2::hal::GetHal().pFileSystem->ResolvePath(FileName);
+        return ::fopen(resolved.c_str(), Mode);
+    }
+#endif
     return ::fopen(FileName, Mode);
 }
 
@@ -64,21 +75,29 @@ int __cdecl fgetc(FILE* f)
 // getting applied mid-way. However since after WinMain is called exit() is also
 // called we never "return" to the hook manager code nor ever remove any hooks therefore
 // this shouldn't be a problem but is something to be aware of.
+#if defined(GTA2_MODERN_BUILD)
+void* operator new(size_t n)
+#else
 void* operator new(size_t n) throw(std::bad_alloc)
+#endif
 {
     return crt::malloc(n);
 }
-void operator delete(void* p) throw()
+void operator delete(void* p) noexcept
 {
     crt::free(p);
 }
 
+#if defined(GTA2_MODERN_BUILD)
+void* operator new[](size_t s)
+#else
 void* operator new[](size_t s) throw(std::bad_alloc)
+#endif
 {
     return crt::malloc(s);
 }
 
-void operator delete[](void* p) throw()
+void operator delete[](void* p) noexcept
 {
     crt::free(p);
 }

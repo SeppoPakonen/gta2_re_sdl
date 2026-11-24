@@ -34,7 +34,6 @@
     #define EXPORT
     #define NOT_IMPLEMENTED do {} while(0)
     #define WIP_IMPLEMENTED do {} while(0)
-    #define throw(...)
 
     #define DEFINE_GLOBAL(type, name, addr) type name
     #define DEFINE_STATIC_GLOBAL(type, name, addr) static type name

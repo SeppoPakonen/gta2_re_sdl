@@ -2,7 +2,9 @@
 
 #include "Function.hpp"
 #include <stdio.h>
-#include <windows.h>
+#if !defined(GTA2_MODERN_BUILD)
+    #include <windows.h>
+#endif
 
 class File
 {

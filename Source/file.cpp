@@ -44,6 +44,11 @@ s32 __stdcall File::GetFileSize_4A6B10(FILE* Stream)
 MATCH_FUNC(0x4A6BB0)
 bool __stdcall File::IsCdRomDrive_4A6BB0(char_type driveLetter)
 {
+#if defined(GTA2_MODERN_BUILD)
+    // Modern platforms have no legacy CD-ROM drive concept; report "not a CD".
+    (void)driveLetter;
+    return false;
+#else
     sprintf(gTmpBuffer_67C598, "%c:", driveLetter);
     // Silly return structure but needed to match (and somehow produces less code)
     if (GetDriveTypeA(gTmpBuffer_67C598) == DRIVE_CDROM)
@@ -51,6 +56,7 @@ bool __stdcall File::IsCdRomDrive_4A6BB0(char_type driveLetter)
         return true;
     }
     return false;
+#endif
 }
 
 // Copy protection: the file must have the expected size and must not be writable (so it is on the CD)
