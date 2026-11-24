@@ -14,5 +14,6 @@ add_library(gta2_hal STATIC
     VirtualTouchpad.cpp
     SDLInputBackend.cpp
     InputKeyMap.cpp
+    TheoraMoviePlayer.cpp
 )
 target_include_directories(gta2_hal PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
