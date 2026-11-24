@@ -370,7 +370,9 @@ else()
     include(cmake/Platform.cmake)
 
     # Find SDL packages
-    if(GTA2_BACKEND STREQUAL "SDL2")
+    if(EMSCRIPTEN)
+        add_compile_definitions(GTA2_USE_SDL2)
+    elseif(GTA2_BACKEND STREQUAL "SDL2")
         find_package(SDL2 QUIET)
         if(NOT TARGET SDL2::SDL2)
             if(WIN32 OR ANDROID)
@@ -468,7 +470,21 @@ else()
             add_executable(gta2 ${GTA2_EXE_SOURCES})
             target_link_libraries(gta2 PRIVATE gta2_core gta2_hal)
 
-            if(GTA2_BACKEND STREQUAL "SDL2")
+            if(EMSCRIPTEN)
+                set_target_properties(gta2 PROPERTIES SUFFIX ".html")
+                target_link_options(gta2 PRIVATE
+                    -sUSE_SDL=2
+                    -sFULL_ES2=1
+                    -sALLOW_MEMORY_GROWTH=1
+                    -sINITIAL_MEMORY=134217728
+                )
+                if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/packaging/web/shell.html")
+                    target_link_options(gta2 PRIVATE --shell-file "${CMAKE_CURRENT_SOURCE_DIR}/packaging/web/shell.html")
+                endif()
+                target_compile_options(gta2 PRIVATE -sUSE_SDL=2)
+                target_compile_options(gta2_hal PRIVATE -sUSE_SDL=2)
+                target_compile_options(gta2_core PRIVATE -sUSE_SDL=2)
+            elseif(GTA2_BACKEND STREQUAL "SDL2")
                 target_link_libraries(gta2 PRIVATE SDL2::SDL2)
             elseif(GTA2_BACKEND STREQUAL "SDL3")
                 target_link_libraries(gta2 PRIVATE SDL3::SDL3)
