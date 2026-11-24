@@ -1,3 +1,87 @@
+#if defined(GTA2_MODERN_BUILD)
+
+// Modern build: the legacy DMA video DLL loader (dma_video.hpp pulls in
+// <Windows.h>/ddraw through DmaVideo.hpp) is only used by the VC6 byte-matching
+// build. Here we bridge the video function pointers into the HAL window and
+// renderer so legacy game code keeps working without DirectDraw.
+#include "hal/HalContext.hpp"
+#include "hal/IWindowSystem.hpp"
+#include "hal/IRenderer.hpp"
+#include <cstdint>
+
+using gta2::hal::s32;
+using gta2::hal::f32;
+
+// Minimal, layout-compatible mirror of the legacy SVideo (see DmaVideo.hpp).
+// Only the leading fields the bridge touches are needed; offsets match the
+// original (field_8 / field_C / field_10).
+struct SVideo {
+    std::uint32_t field_0;
+    std::uint32_t field_4_flags;
+    std::uint32_t field_8_found_width;
+    std::uint32_t field_C_found_height;
+    std::uint32_t field_10_found_rgb_bit_count;
+};
+
+// Function pointer types mirror the legacy T_Vid_* typedefs (DmaVideo.hpp),
+// without the __stdcall convention (ignored on x86-64).
+using T_Vid_SetMode = s32 (*)(SVideo* pVideoDriver, void* hWnd, s32 modeId);
+using T_Vid_FlipBuffers = void (*)(SVideo* pVideo);
+using T_Vid_SetGamma = s32 (*)(SVideo* pVideoDriver, f32 a2, f32 a3, f32 a4);
+
+SVideo* gVidSys_7071D0 = nullptr;
+
+T_Vid_SetMode     pVid_SetMode     = nullptr;
+T_Vid_FlipBuffers pVid_FlipBuffers = nullptr;
+T_Vid_SetGamma    pVid_SetGamma    = nullptr;
+
+static SVideo sModernVideoSys{};
+
+static s32 Bridge_pVid_SetMode(SVideo* pVid, void* /*hWnd*/, s32 /*modeId*/) {
+    gta2::hal::IWindowSystem* pWin = gta2::hal::GetHal().pWindow;
+    if (!pWin) {
+        return -1;
+    }
+    const s32 width = pVid ? static_cast<s32>(pVid->field_8_found_width) : 0;
+    const s32 height = pVid ? static_cast<s32>(pVid->field_C_found_height) : 0;
+    gta2::hal::DisplayMode mode{};
+    mode.width = width;
+    mode.height = height;
+    pWin->SetDisplayMode(mode);
+    pWin->SetWindowSize(width, height);
+    return 0;
+}
+
+static void Bridge_pVid_FlipBuffers(SVideo* /*pVid*/) {
+    gta2::hal::IWindowSystem* pWin = gta2::hal::GetHal().pWindow;
+    if (pWin) {
+        pWin->SwapBuffers();
+    }
+}
+
+static s32 Bridge_pVid_SetGamma(SVideo* /*pVid*/, f32 r, f32 g, f32 b) {
+    gta2::hal::IRenderer* pRend = gta2::hal::GetHal().pRenderer;
+    if (!pRend) {
+        return -1;
+    }
+    pRend->SetGamma((r + g + b) / 3.0f);
+    return 0;
+}
+
+s32 DMA_Video_LoadDll_5EB970(const char* /*lpLibFileName*/)
+{
+    // Under the modern build we never load the Windows DirectDraw DLL; route the
+    // video entry points through the HAL instead and expose a dummy SVideo so
+    // legacy code reading gVidSys_7071D0 fields stays safe.
+    gVidSys_7071D0 = &sModernVideoSys;
+    pVid_SetMode = Bridge_pVid_SetMode;
+    pVid_FlipBuffers = Bridge_pVid_FlipBuffers;
+    pVid_SetGamma = Bridge_pVid_SetGamma;
+    return 0;
+}
+
+#else
+
 #include "dma_video.hpp"
 #include "Function.hpp"
 #include "Globals.hpp"
@@ -148,3 +232,5 @@ EXPORT s32 __stdcall DMA_Video_LoadDll_5EB970(const char_type* lpLibFileName)
         return -1;
     }
 }
+
+#endif // GTA2_MODERN_BUILD
