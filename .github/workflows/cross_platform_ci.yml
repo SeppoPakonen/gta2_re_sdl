@@ -1,0 +1,123 @@
+name: Multiplatform CI
+
+on:
+  push:
+    branches: [ master, main, 'feature/**' ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-desktop:
+    name: Desktop (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux-GCC-SDL2
+            os: ubuntu-22.04
+            cc: gcc
+            cxx: g++
+            backend: SDL2
+          - name: Linux-Clang-SDL2
+            os: ubuntu-22.04
+            cc: clang
+            cxx: clang++
+            backend: SDL2
+          - name: Windows-MSVC-SDL2
+            os: windows-2022
+            backend: SDL2
+          - name: Windows-MinGW-SDL2
+            os: windows-2022
+            is_mingw: true
+            backend: SDL2
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev libgl1-mesa-dev ninja-build
+
+    - name: Set up MinGW
+      if: matrix.is_mingw
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+
+    - name: Configure CMake (MinGW)
+      if: matrix.is_mingw
+      run: |
+        cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DGTA2_BACKEND=${{ matrix.backend }}
+
+    - name: Configure CMake (MSVC / Linux)
+      if: "!matrix.is_mingw"
+      env:
+        CC: ${{ matrix.cc }}
+        CXX: ${{ matrix.cxx }}
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DGTA2_BACKEND=${{ matrix.backend }}
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+  build-android:
+    name: Android (NDK arm64-v8a)
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r26b
+    - name: Build Android Native Library
+      run: |
+        cmake -B build_android \
+          -DCMAKE_TOOLCHAIN_FILE="${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+          -DANDROID_ABI=arm64-v8a \
+          -DANDROID_PLATFORM=android-21 \
+          -DGTA2_BACKEND=SDL2 \
+          -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_android --target main
+
+  build-wasm:
+    name: WebAssembly (Emscripten)
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 3.1.50
+    - name: Build WebAssembly
+      run: |
+        emcmake cmake -B build_wasm -DCMAKE_BUILD_TYPE=Release -DGTA2_BACKEND=SDL2
+        cmake --build build_wasm --target gta2
+
+  build-freebsd:
+    name: FreeBSD (Clang Syntax & Build)
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Install Clang & Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang libsdl2-dev
+    - name: Verify BSD/Clang Build Compatibility
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        cmake -B build_bsd -DCMAKE_BUILD_TYPE=Release -DGTA2_BACKEND=SDL2
+        cmake --build build_bsd --target gta2
