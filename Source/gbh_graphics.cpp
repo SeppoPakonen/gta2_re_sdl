@@ -1,3 +1,141 @@
+#if defined(GTA2_MODERN_BUILD)
+
+// Modern build: the legacy GBH graphics DLL loader (gbh_graphics.hpp pulls in
+// <windows.h>/ddraw through d3ddll) is only used by the VC6 byte-matching build.
+// Here we provide a bridge that redirects every pgbh_* function pointer into the
+// HAL renderer (gta2::hal::GetHal().pRenderer), so the hundreds of legacy call
+// sites in Draw.cpp / MapRenderer.cpp / SpriteRenderer.cpp / KanjiFont.cpp keep
+// working without modification.
+#include "hal/HalContext.hpp"
+#include "hal/IRenderer.hpp"
+#include <cstdint>
+#include <cstddef>
+
+using gta2::hal::s32;
+using gta2::hal::u8;
+using gta2::hal::u16;
+using gta2::hal::u32;
+
+// Layout-compatible mirrors of the legacy gbh types (see d3ddll.hpp). Only the
+// fields the bridge touches are needed; Vert matches gta2::hal::HalVertex.
+struct STexture {
+    u16 field_0_id;
+    u16 field_2;
+    u16 field_4_pal_is_trans;
+    u16 field_6_pal_size;
+    void* field_8_locked_pixels_ptr;
+    u8 field_C;
+    u8 field_D;
+    u16 field_E_width;
+    u16 field_10_height;
+    u8 field_12_bPalIsValid;
+    u8 field_13_flags;
+    void* field_14_original_pixel_data_ptr;
+    void* field_18_pPaltData;
+    void* field_1C_ptr;
+};
+struct Vert {
+    float x, y, z, w;
+    u32 diff;
+    u32 spec;
+    float u, v;
+};
+
+using T_gbh_DrawQuad = void (*)(s32 flags, STexture* pTexture, Vert* pVerts, s32 baseColour);
+using T_gbh_DrawTile = s32 (*)(u32 flags, STexture* pTexture, Vert* pData, u8 diffuseColour);
+using T_gbh_DrawTilePart = s32 (*)(u32 flags, STexture* pTexture, Vert* pData, s32 diffuseColour);
+using T_gbh_DrawTriangle = void (*)(s32 triFlags, STexture* pTexture, Vert* pVerts, u8 diffuseColour);
+using T_gbh_BeginScene = void (*)();
+using T_gbh_EndScene = void (*)();
+using T_gbh_SetWindow = s32 (*)(float left, float top, float right, float bottom);
+
+T_gbh_DrawQuad      pgbh_DrawQuad      = nullptr;
+T_gbh_DrawTile      pgbh_DrawTile      = nullptr;
+T_gbh_DrawTilePart  pgbh_DrawTilePart  = nullptr;
+T_gbh_DrawTriangle  pgbh_DrawTriangle  = nullptr;
+T_gbh_BeginScene    pgbh_BeginScene    = nullptr;
+T_gbh_EndScene      pgbh_EndScene      = nullptr;
+T_gbh_SetWindow     pgbh_SetWindow     = nullptr;
+
+static gta2::hal::TextureHandle Bridge_TextureHandle(STexture* pTexture) {
+    if (!pTexture) {
+        return gta2::hal::kInvalidTextureHandle;
+    }
+    return static_cast<gta2::hal::TextureHandle>(
+        reinterpret_cast<std::uintptr_t>(pTexture->field_1C_ptr));
+}
+
+static void Bridge_gbh_DrawQuad(s32 flags, STexture* pTexture, Vert* pVerts, s32 baseColour) {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return;
+    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pVerts),
+                        Bridge_TextureHandle(pTexture),
+                        static_cast<u32>(flags),
+                        static_cast<u32>(baseColour));
+}
+
+static s32 Bridge_gbh_DrawTile(u32 flags, STexture* pTexture, Vert* pData, u8 diffuseColour) {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return 0;
+    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pData),
+                        Bridge_TextureHandle(pTexture),
+                        flags,
+                        static_cast<u32>(diffuseColour));
+    return 0;
+}
+
+static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s32 diffuseColour) {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return 0;
+    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pData),
+                        Bridge_TextureHandle(pTexture),
+                        flags,
+                        static_cast<u32>(diffuseColour));
+    return 0;
+}
+
+static void Bridge_gbh_DrawTriangle(s32 triFlags, STexture* pTexture, Vert* pVerts, u8 diffuseColour) {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return;
+    pRenderer->DrawTriangle(reinterpret_cast<const gta2::hal::HalVertex*>(pVerts),
+                            Bridge_TextureHandle(pTexture),
+                            static_cast<u32>(triFlags),
+                            static_cast<u32>(diffuseColour));
+}
+
+static void Bridge_gbh_BeginScene() {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (pRenderer) pRenderer->BeginScene();
+}
+
+static void Bridge_gbh_EndScene() {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (pRenderer) pRenderer->EndScene();
+}
+
+static s32 Bridge_gbh_SetWindow(float left, float top, float right, float bottom) {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (pRenderer) {
+        pRenderer->SetViewport(static_cast<s32>(left), static_cast<s32>(top),
+                               static_cast<s32>(right - left), static_cast<s32>(bottom - top));
+    }
+    return 0;
+}
+
+// Bind every pgbh_* pointer to its HAL bridge. Called by the modern engine
+// startup (EngineRunner) instead of GBH_GraphicsLoadDll_5EA680.
+void GBH_GraphicsInit_Modern() {
+    pgbh_DrawQuad     = Bridge_gbh_DrawQuad;
+    pgbh_DrawTile     = Bridge_gbh_DrawTile;
+    pgbh_DrawTilePart = Bridge_gbh_DrawTilePart;
+    pgbh_DrawTriangle = Bridge_gbh_DrawTriangle;
+    pgbh_BeginScene   = Bridge_gbh_BeginScene;
+    pgbh_EndScene     = Bridge_gbh_EndScene;
+    pgbh_SetWindow    = Bridge_gbh_SetWindow;
+}
+
+#else
+
 #include "gbh_graphics.hpp"
 #include "Function.hpp"
 #include "Globals.hpp"
@@ -194,3 +332,5 @@ EXPORT s32 __stdcall GBH_GraphicsLoad_5EB680(const char_type* lpLibFileName, SVi
 
     return 0;
 }
+
+#endif // GTA2_MODERN_BUILD

@@ -25,7 +25,9 @@ template <class T> class set
 } // namespace std
 #endif
 #include "3rdParty/GTA2Hax/d3ddll/d3ddll.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 EXPORT s32 __stdcall GBH_GraphicsLoadDll_5EA680(const char_type* lpLibFileName);
 
