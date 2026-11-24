@@ -65,8 +65,13 @@ class Object
     EXPORT bool ShouldStopAtTrafficLight_525290(Sprite* pSprite) const;
     EXPORT bool ShouldCollideWithSprite_522430(Sprite* pSprite) const;
     EXPORT bool SelectCollisionSprite_522460(Sprite* pProbe);
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT void SetMovementVector_5224E0(const Fix16_Point& speed);
+    EXPORT void SetMovementVectorWithRandomState_522640(const Fix16_Point& point);
+#else
     EXPORT void SetMovementVector_5224E0(Fix16_Point& speed);
     EXPORT void SetMovementVectorWithRandomState_522640(Fix16_Point& point);
+#endif
     EXPORT void SetConveyorPush_5226A0(char_type conveyor_speed);
     EXPORT void ResolveCollisionWithObject_522710(Object* pObj, Fix16_Point* pPoint);
     EXPORT void ResolveCollisionWithPed_5229B0(Char* pChar, Fix16_Point* pPoint, u8 not_used);
@@ -101,7 +106,11 @@ class Object
     EXPORT void AssignToBucket_527AE0();
     EXPORT void RemoveFromCollisionBuckets_527D00();
     EXPORT void ReleaseSubObjects_527F10();
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT void NewObj3C_528130(const Fix16_Point& speed);
+#else
     EXPORT void NewObj3C_528130(Fix16_Point& speed);
+#endif
     EXPORT bool ChangeInstanceLimitKind_528240(s32 current, s32 desired);
     EXPORT void TickObject_5283C0(s32 obj_type);
     EXPORT bool OnObjectTouched_5288B0(Sprite* pSprite);

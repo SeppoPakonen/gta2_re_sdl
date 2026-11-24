@@ -4710,7 +4710,12 @@ void Map_0x370::load_chunk_4E94B0(const char_type* pChunkType, size_t chunkLen)
     }
     else
     {
+#if defined(GTA2_MODERN_BUILD)
+        u32 seekOffset = static_cast<u32>(chunkLen);
+        File::Global_Seek_4A7140(&seekOffset);
+#else
         File::Global_Seek_4A7140(&chunkLen);
+#endif
     }
 }
 

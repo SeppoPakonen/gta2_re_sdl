@@ -9,7 +9,9 @@
 #include "memory.hpp"
 #include <stdio.h>
 #include <string.h>
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 #include "enums.hpp"
 
 // Forward declarations: the functions below are in address order
@@ -1108,6 +1110,21 @@ gtx_0x106C::~gtx_0x106C()
 MATCH_FUNC(0x5ABA00)
 void sprite_delta::Delta_5ABA00(u8* pArray)
 {
+#if defined(GTA2_MODERN_BUILD)
+    u8* src = reinterpret_cast<u8*>(field_0_pData);
+    u8* end = src + field_4_len;
+    u8* dst = pArray;
+    while (src < end)
+    {
+        u16 offset = *reinterpret_cast<const u16*>(src);
+        src += 2;
+        u8 count = *src++;
+        dst += offset;
+        memcpy(dst, src, count);
+        src += count;
+        dst += count;
+    }
+#else
     // Inline asm in the original (lodsw, rep movsb). Each entry is a u16 offset from the end
     // of the previous run, a u8 length and that many bytes.
     sprite_delta* pThis = this;
@@ -1133,12 +1150,36 @@ void sprite_delta::Delta_5ABA00(u8* pArray)
         pop esi
         pop edi
     }
+#endif
 }
 
 // https://decomp.me/scratch/Cc0Dx Not fully working
 MATCH_FUNC(0x5ABA40)
 void sprite_delta::Delta_5ABA40(u8* pArray, u32 width)
 {
+#if defined(GTA2_MODERN_BUILD)
+    u8* src = reinterpret_cast<u8*>(field_0_pData);
+    u8* end = src + field_4_len;
+    u8* dst = pArray + width - 1;
+    while (src < end)
+    {
+        u16 offset = *reinterpret_cast<const u16*>(src);
+        src += 2;
+        u8 count = *src++;
+        dst += offset;
+        u32 temp = (offset & 0xFF) << 1;
+        dst -= temp;
+        if (temp >= 0x100)
+        {
+            dst += 0x200;
+        }
+        for (u32 i = 0; i < count; i++)
+        {
+            *dst = *src++;
+            dst--;
+        }
+    }
+#else
     // Inline asm in the original (lodsw / loop)
     // Each entry: u16 offset, u8 len, then len bytes written backwards from the end of the row
     __asm
@@ -1177,6 +1218,7 @@ void sprite_delta::Delta_5ABA40(u8* pArray, u32 width)
         pop esi
         pop edi
     }
+#endif
 }
 
 MATCH_FUNC(0x5abaa0)

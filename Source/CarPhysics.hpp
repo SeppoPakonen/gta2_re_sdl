@@ -27,6 +27,18 @@ EXTERN_GLOBAL(Fix16, gArrowSteerAngVel_6FE0B0);
 EXTERN_GLOBAL(Fix16, kF16Zero_677B90);
 EXTERN_GLOBAL(Fix16_Point, CollisionIntersectionPoint_6FE1A0);
 
+#if defined(GTA2_MODERN_BUILD)
+EXPORT Fix16_Point __stdcall ComputeCollisionImpulse_55F3B0(Fix16 OwnerMass,
+                                                                Fix16 TargetMass,
+                                                                const Fix16_Point& RelativeVelocity,
+                                                                const Fix16_Point& DistToCollision_ByRef,
+                                                                const Fix16_Point& CollisionIntersectPoint,
+                                                                const Fix16_Point& CoM_related,
+                                                                const Fix16_Point& TargetCoM,
+                                                                Fix16 OwnerMomOfInertia,
+                                                                Fix16 TargetMomOfInertia,
+                                                                Fix16 offset);
+#else
 EXPORT Fix16_Point __stdcall ComputeCollisionImpulse_55F3B0(Fix16 OwnerMass,
                                                                 Fix16 TargetMass,
                                                                 Fix16_Point& RelativeVelocity,
@@ -37,6 +49,7 @@ EXPORT Fix16_Point __stdcall ComputeCollisionImpulse_55F3B0(Fix16 OwnerMass,
                                                                 Fix16 OwnerMomOfInertia,
                                                                 Fix16 TargetMomOfInertia,
                                                                 Fix16 offset);
+#endif
 
 namespace car_turn_direction
 {
@@ -200,10 +213,19 @@ class CarPhysics
     EXPORT void ApplyForceAtPoint_55F800(Fix16_Point* pPoint, Fix16_Point* pForce, s32 bRotate);
     EXPORT void AccumulateImpulse_55F930(Fix16_Point* pPoint);
     EXPORT void ApplyAngularImpulse_55F970(Fix16 impulse);
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT void ApplyForceScaledByMass_55F9A0(const Fix16_Point& force);
+#else
     EXPORT void ApplyForceScaledByMass_55F9A0(Fix16_Point& force);
+#endif
     EXPORT void ApplyImpulseWithTrailerRedirect_55FA10(Fix16_Point* pPoint);
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT Fix16 ApplyImpactForcesAndDamage_55FA60(Fix16_Point& PointOfForce, const Fix16_Point& Impulse, s32 base_dmg);
+    EXPORT void AccumulateImpulse_55FC30(const Fix16_Point& point, s32 base_dmg);
+#else
     EXPORT Fix16 ApplyImpactForcesAndDamage_55FA60(Fix16_Point& PointOfForce, Fix16_Point& Impulse, s32 base_dmg);
     EXPORT void AccumulateImpulse_55FC30(Fix16_Point& point, s32 base_dmg);
+#endif
     EXPORT void HandleWorldCollision_55FD00(Fix16_Point& relative_velocity);
     EXPORT void HandleCarCollision_55FF20(Car* pOtherCar);
     EXPORT void HandleObjectCollision_5606C0(Object* pObject, char_type damage_area);
@@ -272,7 +294,7 @@ class CarPhysics
         }
     }
 
-    Fix16 CarPhysics::ComputeUndamagedThrottleTorque_49E8E0()
+    Fix16 ComputeUndamagedThrottleTorque_49E8E0()
     {
         if (IsTurboActive_561940())
         {
@@ -284,7 +306,7 @@ class CarPhysics
         }
     }
 
-    bool CarPhysics::IsDrowning_421100()
+    bool IsDrowning_421100()
     {
         if (field_98_surface_type == car_surface_type::water_surface_8)
         {

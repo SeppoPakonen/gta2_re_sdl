@@ -17,6 +17,7 @@
 #include "fix16.hpp"
 #include "gbh_graphics.hpp"
 #include <stdlib.h>
+#include <cstdarg>
 #include "gtx_0x106C.hpp"
 #include "SoundObject.hpp"
 #include "input.hpp"
@@ -30,7 +31,12 @@
 #include "TextTable.hpp"
 #include "winmain.hpp"
 #include "TagGame.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <io.h>
+#else
+#include "hal/HalContext.hpp"
+#define timeGetTime() (gta2::hal::GetHal().pTime ? gta2::hal::GetHal().pTime->GetTicksMs() : 0)
+#endif
 #include <stdio.h>
 #include <wchar.h>
 
@@ -80,6 +86,7 @@ DEFINE_GLOBAL(bool, gCheatMiniCars_67D6C8, 0x67D6C8);
 
 s32 sCheatHashSecret_61F0A8[8] = {829, 761, 23, 641, 43, 809, 677, 191};
 
+#if !defined(GTA2_MODERN_BUILD)
 MATCH_FUNC(0x4AE010)
 LPCSTR __stdcall FreeLoader::GetRegDword_4AE010(HKEY hKey, LPCSTR lpValueName, LPCSTR default_value)
 {
@@ -268,6 +275,35 @@ DIOBJECTDATAFORMAT gMouseObjectDataFormats_5EA3D0[7] = {{&GUID_XAxis, 0u, 167769
 DIDATAFORMAT gKeyboardDataFormat_601A54 = {24u, 16u, DIDF_RELAXIS, 256u, 256u, gKeyboardObjectDataFormats_5E9110};
 DIDATAFORMAT gInputDeviceFormat_601A6C = {24u, 16u, DIDF_ABSAXIS, 80u, 44u, gInputDeviceObjectDataFormats_5EA110};
 DIDATAFORMAT stru_601A84 = {24u, 16u, DIDF_RELAXIS, 16u, 7u, gMouseObjectDataFormats_5EA3D0};
+#else
+MATCH_FUNC(0x4AE010)
+LPCSTR __stdcall FreeLoader::GetRegDword_4AE010(HKEY /*hKey*/, LPCSTR /*lpValueName*/, LPCSTR default_value)
+{
+    return default_value;
+}
+
+MATCH_FUNC(0x4AE0F0)
+s32 __stdcall FreeLoader::GetCityInstalled_4AE0F0()
+{
+    return 3;
+}
+
+MATCH_FUNC(0x4AE170)
+void __cdecl FreeLoader::MessageBox_4AE170(UINT /*uType*/, LPCSTR /*lpCaption*/, LPCSTR lpFormat, ...)
+{
+    va_list args;
+    va_start(args, lpFormat);
+    vfprintf(stderr, lpFormat, args);
+    va_end(args);
+    fputs("\n", stderr);
+}
+
+MATCH_FUNC(0x4AE1F0)
+EXPORT bool __stdcall FreeLoader::CheckCityInstalled_4AE1F0(u8 /*city_idx*/)
+{
+    return true;
+}
+#endif
 
 struct TgaInfo
 {
@@ -3411,21 +3447,29 @@ Frontend::~Frontend()
 MATCH_FUNC(0x4AFD70)
 void Frontend::AcquireKeyBoard_4AFD70()
 {
+#if !defined(GTA2_MODERN_BUILD)
     if (!field_4_pKeyboardDevice || field_4_pKeyboardDevice->Acquire() < 0)
     {
         field_10C_bKeyboardAcquireFailed = true;
     }
+#else
+    field_10C_bKeyboardAcquireFailed = false;
+#endif
 }
 
 MATCH_FUNC(0x4AFD00)
 void Frontend::FreeKeyBoardDevice_4AFD00()
 {
+#if !defined(GTA2_MODERN_BUILD)
     if (field_4_pKeyboardDevice)
     {
         field_4_pKeyboardDevice->Unacquire();
         field_4_pKeyboardDevice->Release();
         field_4_pKeyboardDevice = NULL;
     }
+#else
+    field_4_pKeyboardDevice = NULL;
+#endif
 }
 
 MATCH_FUNC(0x4B6750)
@@ -3437,6 +3481,7 @@ void Frontend::FreeImageTable_4B6750()
 MATCH_FUNC(0x4AFDD0)
 bool Frontend::KeyBoard_GetKeyStates_4AFDD0()
 {
+#if !defined(GTA2_MODERN_BUILD)
     HRESULT hr = field_4_pKeyboardDevice->GetDeviceState(256, field_8_keys);
     if (FAILED(hr))
     {
@@ -3453,11 +3498,20 @@ bool Frontend::KeyBoard_GetKeyStates_4AFDD0()
     }
 
     return true;
+#else
+    auto pInput = gta2::hal::GetHal().pInput;
+    if (!pInput) return false;
+    for (int i = 0; i < 256; ++i) {
+        field_8_keys[i] = pInput->IsKeyDown(static_cast<u32>(i)) ? 0x80 : 0;
+    }
+    return true;
+#endif
 }
 
 MATCH_FUNC(0x4AFBE0)
 void Frontend::InitKeyBoardDevice_4AFBE0()
 {
+#if !defined(GTA2_MODERN_BUILD)
     field_0_pDInput = gpDInput_67B804;
     field_4_pKeyboardDevice = NULL;
 
@@ -3477,6 +3531,11 @@ void Frontend::InitKeyBoardDevice_4AFBE0()
     }
 
     AcquireKeyBoard_4AFD70();
+#else
+    field_0_pDInput = nullptr;
+    field_4_pKeyboardDevice = nullptr;
+    AcquireKeyBoard_4AFD70();
+#endif
 }
 
 MATCH_FUNC(0x4AF0E0)

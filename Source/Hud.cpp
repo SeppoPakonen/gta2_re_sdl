@@ -3,6 +3,7 @@
 #include "hud_message_priority.hpp"
 #include "hud_brief_priority.hpp"
 #include "voice_line.hpp"
+#include "input.hpp"
 #include "Car.hpp"
 #include "Draw.hpp"
 #include "Frontend.hpp"

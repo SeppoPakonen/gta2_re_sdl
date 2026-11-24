@@ -20,7 +20,11 @@
 
 #include "Frontend.hpp" // For the cheat bools
 
+#if !defined(GTA2_MODERN_BUILD)
 #include <DINPUT.H>
+#else
+#include "input.hpp"
+#endif
 #include "ped_graphic_type.hpp"
 
 // Defined in Ped.cpp

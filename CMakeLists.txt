@@ -391,13 +391,22 @@ else()
         "Source/*.cpp"
     )
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/winmain.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/WinMainProxy.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/main.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/hal/.*")
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/HookLoader.cpp")
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/ExePatcher.cpp")
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/cl_proxy.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/ImGuiDebug.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/NetPlay.cpp")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/NetUi.cpp")
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/3rdParty/.*")
 
     add_library(gta2_core STATIC ${GAME_SOURCES})
     target_compile_definitions(gta2_core PUBLIC GTA2_MODERN_BUILD)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(gta2_core PRIVATE -fpermissive -Wno-write-strings)
+    endif()
 
     # The HAL library (gta2_hal) is provided by Source/hal, added by a later task.
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Source/hal/CMakeLists.txt")

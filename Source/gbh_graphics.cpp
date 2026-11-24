@@ -6,6 +6,7 @@
 // HAL renderer (gta2::hal::GetHal().pRenderer), so the hundreds of legacy call
 // sites in Draw.cpp / MapRenderer.cpp / SpriteRenderer.cpp / KanjiFont.cpp keep
 // working without modification.
+#include "gbh_graphics.hpp"
 #include "hal/HalContext.hpp"
 #include "hal/IRenderer.hpp"
 #include <cstdint>
@@ -16,39 +17,10 @@ using gta2::hal::u8;
 using gta2::hal::u16;
 using gta2::hal::u32;
 
-// Layout-compatible mirrors of the legacy gbh types (see d3ddll.hpp). Only the
-// fields the bridge touches are needed; Vert matches gta2::hal::HalVertex.
-struct STexture {
-    u16 field_0_id;
-    u16 field_2;
-    u16 field_4_pal_is_trans;
-    u16 field_6_pal_size;
-    void* field_8_locked_pixels_ptr;
-    u8 field_C;
-    u8 field_D;
-    u16 field_E_width;
-    u16 field_10_height;
-    u8 field_12_bPalIsValid;
-    u8 field_13_flags;
-    void* field_14_original_pixel_data_ptr;
-    void* field_18_pPaltData;
-    void* field_1C_ptr;
-};
-struct Vert {
-    float x, y, z, w;
-    u32 diff;
-    u32 spec;
-    float u, v;
-};
+// Layout-compatible mirrors of the legacy gbh types (see d3ddll.hpp).
+// STexture and Vert are defined in gbh_graphics.hpp.
 
-using T_gbh_DrawQuad = void (*)(s32 flags, STexture* pTexture, Vert* pVerts, s32 baseColour);
-using T_gbh_DrawTile = s32 (*)(u32 flags, STexture* pTexture, Vert* pData, u8 diffuseColour);
-using T_gbh_DrawTilePart = s32 (*)(u32 flags, STexture* pTexture, Vert* pData, s32 diffuseColour);
-using T_gbh_DrawTriangle = void (*)(s32 triFlags, STexture* pTexture, Vert* pVerts, u8 diffuseColour);
-using T_gbh_BeginScene = void (*)();
-using T_gbh_EndScene = void (*)();
-using T_gbh_SetWindow = s32 (*)(float left, float top, float right, float bottom);
-
+// pgbh_* pointers defined for modern build
 T_gbh_DrawQuad      pgbh_DrawQuad      = nullptr;
 T_gbh_DrawTile      pgbh_DrawTile      = nullptr;
 T_gbh_DrawTilePart  pgbh_DrawTilePart  = nullptr;
@@ -113,13 +85,12 @@ static void Bridge_gbh_EndScene() {
     if (pRenderer) pRenderer->EndScene();
 }
 
-static s32 Bridge_gbh_SetWindow(float left, float top, float right, float bottom) {
+static void Bridge_gbh_SetWindow(float left, float top, float right, float bottom) {
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
     if (pRenderer) {
         pRenderer->SetViewport(static_cast<s32>(left), static_cast<s32>(top),
                                static_cast<s32>(right - left), static_cast<s32>(bottom - top));
     }
-    return 0;
 }
 
 // Bind every pgbh_* pointer to its HAL bridge. Called by the modern engine

@@ -67,6 +67,135 @@ typedef double f64;
         #include <cwchar>
         #define swprintf(buf, ...) swprintf(buf, 1024, __VA_ARGS__)
     #endif
+    #ifndef vswprintf
+        #include <cwchar>
+        #define vswprintf(buf, fmt, args) vswprintf(buf, 1024, fmt, args)
+    #endif
+    #ifndef wsprintfA
+        #include <cstdio>
+        #define wsprintfA snprintf
+    #endif
+    #ifndef _itoa
+        inline char* _itoa(int val, char* buf, int radix) {
+            if (radix == 16) sprintf(buf, "%x", val);
+            else if (radix == 8) sprintf(buf, "%o", val);
+            else sprintf(buf, "%d", val);
+            return buf;
+        }
+    #endif
+    #ifndef _itow
+        inline wchar_t* _itow(int val, wchar_t* buf, int radix) {
+            if (radix == 16) swprintf(buf, L"%x", val);
+            else if (radix == 8) swprintf(buf, L"%o", val);
+            else swprintf(buf, L"%d", val);
+            return buf;
+        }
+    #endif
+    #ifndef _strnicmp
+        #define _strnicmp strncasecmp
+    #endif
+    #ifndef _stricmp
+        #define _stricmp strcasecmp
+    #endif
+    #ifndef _stdcall
+        #define _stdcall __stdcall
+    #endif
+    typedef unsigned int UINT;
+    typedef uintptr_t UINT_PTR;
+    typedef void* LPVOID;
+
+#if !defined(_WIN32)
+#include <dirent.h>
+#include <sys/stat.h>
+#include <fnmatch.h>
+#include <string.h>
+
+struct _finddata_t {
+    unsigned int attrib;
+    time_t time_create;
+    time_t time_access;
+    time_t time_write;
+    size_t size;
+    char name[260];
+};
+
+struct ModernFindHandle {
+    DIR* dir;
+    char pattern[260];
+    char dirpath[260];
+};
+
+inline long _findfirst(const char* pattern, _finddata_t* data) {
+    if (!pattern || !data) return -1;
+    char pat_norm[260];
+    strncpy(pat_norm, pattern, sizeof(pat_norm));
+    pat_norm[sizeof(pat_norm) - 1] = 0;
+    for (char* p = pat_norm; *p; ++p) {
+        if (*p == '\\') *p = '/';
+    }
+    if (strchr(pat_norm, '*') == nullptr && strchr(pat_norm, '?') == nullptr) {
+        struct stat st;
+        if (stat(pat_norm, &st) == 0) {
+            data->size = st.st_size;
+            const char* slash = strrchr(pat_norm, '/');
+            strncpy(data->name, slash ? slash + 1 : pat_norm, sizeof(data->name));
+            data->name[sizeof(data->name) - 1] = 0;
+            return 1;
+        }
+        return -1;
+    }
+    char dirpath[260] = ".";
+    const char* slash = strrchr(pat_norm, '/');
+    char filepattern[260];
+    if (slash) {
+        size_t dirlen = slash - pat_norm;
+        strncpy(dirpath, pat_norm, dirlen);
+        dirpath[dirlen] = 0;
+        strncpy(filepattern, slash + 1, sizeof(filepattern));
+    } else {
+        strncpy(filepattern, pat_norm, sizeof(filepattern));
+    }
+    filepattern[sizeof(filepattern) - 1] = 0;
+    DIR* d = opendir(dirpath);
+    if (!d) return -1;
+    struct dirent* de;
+    while ((de = readdir(d)) != nullptr) {
+        if (fnmatch(filepattern, de->d_name, FNM_CASEFOLD) == 0) {
+            strncpy(data->name, de->d_name, sizeof(data->name));
+            data->name[sizeof(data->name) - 1] = 0;
+            ModernFindHandle* h = new ModernFindHandle{d, "", ""};
+            strncpy(h->pattern, filepattern, sizeof(h->pattern));
+            strncpy(h->dirpath, dirpath, sizeof(h->dirpath));
+            return reinterpret_cast<long>(h);
+        }
+    }
+    closedir(d);
+    return -1;
+}
+
+inline int _findnext(long handle, _finddata_t* data) {
+    if (handle <= 1 || !data) return -1;
+    ModernFindHandle* h = reinterpret_cast<ModernFindHandle*>(handle);
+    struct dirent* de;
+    while ((de = readdir(h->dir)) != nullptr) {
+        if (fnmatch(h->pattern, de->d_name, FNM_CASEFOLD) == 0) {
+            strncpy(data->name, de->d_name, sizeof(data->name));
+            data->name[sizeof(data->name) - 1] = 0;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+inline int _findclose(long handle) {
+    if (handle > 1) {
+        ModernFindHandle* h = reinterpret_cast<ModernFindHandle*>(handle);
+        if (h->dir) closedir(h->dir);
+        delete h;
+    }
+    return 0;
+}
+#endif
 #endif
 
 // Portable fallbacks for legacy Windows types
@@ -86,6 +215,12 @@ typedef double f64;
     typedef DWORD* LPDWORD;
     typedef char* LPSTR;
     typedef const char* LPCSTR;
+    typedef unsigned long WPARAM;
+    typedef long LPARAM;
+    typedef long LRESULT;
+    typedef void* HMENU;
+    typedef void* WNDPROC;
+    inline BOOL DestroyWindow(HWND) { return 1; }
     #define TRUE 1
     #define FALSE 0
 #endif

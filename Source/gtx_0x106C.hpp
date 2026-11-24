@@ -3,6 +3,7 @@
 #include "Function.hpp"
 #include "enums.hpp"
 #include <cstdio>
+#include <cstring>
 #if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
 #endif

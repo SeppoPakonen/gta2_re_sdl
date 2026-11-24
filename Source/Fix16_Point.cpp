@@ -29,13 +29,21 @@ Ang16 Fix16_Point::atan2_40ACD0()
 
 // https://decomp.me/scratch/qQwG3
 MATCH_FUNC(0x438FE0)
+#if defined(GTA2_MODERN_BUILD)
+Fix16_Point Fix16_Point::Multiply_438FE0(const Fix16& in) const
+#else
 Fix16_Point Fix16_Point::Multiply_438FE0(Fix16& in) const
+#endif
 {
     return Fix16_Point(x * in, y * in);
 }
 
 MATCH_FUNC(0x442AD0)
+#if defined(GTA2_MODERN_BUILD)
+Fix16_Point Fix16_Point::NormalizeSafe_442AD0() const
+#else
 Fix16_Point Fix16_Point::NormalizeSafe_442AD0()
+#endif
 {
     Fix16 length = GetLength_inline_442AD0();
     if (length == gFix16_6777CC)
@@ -50,7 +58,11 @@ Fix16_Point Fix16_Point::NormalizeSafe_442AD0()
     }
 }
 
+#if defined(GTA2_MODERN_BUILD)
+Fix16_Point Fix16_Point::operator/(const Fix16& in) const
+#else
 Fix16_Point Fix16_Point::operator/(Fix16& in) const
+#endif
 {
     return Fix16_Point(x / in, y / in);
 }
@@ -63,7 +75,11 @@ Fix16_Point Fix16_Point::MultBy_442C80(const s32& factor) const
 
 // https://decomp.me/scratch/nFSYS
 MATCH_FUNC(0x442CB0)
+#if defined(GTA2_MODERN_BUILD)
+Fix16_Point Fix16_Point::Divide_442CB0(const Fix16& in) const
+#else
 Fix16_Point Fix16_Point::Divide_442CB0(Fix16& in) const
+#endif
 {
     return Fix16_Point(x / in, y / in);
 }

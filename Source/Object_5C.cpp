@@ -331,7 +331,11 @@ bool Object::SelectCollisionSprite_522460(Sprite* pProbe)
 }
 
 MATCH_FUNC(0x5224e0)
+#if defined(GTA2_MODERN_BUILD)
+void Object::SetMovementVector_5224E0(const Fix16_Point& speed)
+#else
 void Object::SetMovementVector_5224E0(Fix16_Point& speed)
+#endif
 {
     Fix16_Point new_velocity;
     if (field_10_obj_3c)
@@ -348,7 +352,11 @@ void Object::SetMovementVector_5224E0(Fix16_Point& speed)
 }
 
 MATCH_FUNC(0x522640)
+#if defined(GTA2_MODERN_BUILD)
+void Object::SetMovementVectorWithRandomState_522640(const Fix16_Point& point)
+#else
 void Object::SetMovementVectorWithRandomState_522640(Fix16_Point& point)
+#endif
 {
     SetMovementVector_5224E0(point);
 
@@ -2267,7 +2275,11 @@ void Object::ReleaseSubObjects_527F10()
 
 // 9.6f 0x4847D0
 MATCH_FUNC(0x528130)
+#if defined(GTA2_MODERN_BUILD)
+void Object::NewObj3C_528130(const Fix16_Point& speed)
+#else
 void Object::NewObj3C_528130(Fix16_Point& speed)
+#endif
 {
     Object_3C* pNewObj = gObject_3C_Pool_6F8F7C->Allocate();
 

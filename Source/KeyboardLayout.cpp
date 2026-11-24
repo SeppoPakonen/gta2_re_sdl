@@ -3,7 +3,18 @@
 #include "Globals.hpp"
 #include "error.hpp"
 #include <stdlib.h>
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#else
+#include <string.h>
+#define KL_NAMELENGTH 9
+#define LANG_FRENCH 0x0c
+#define LANG_GERMAN 0x07
+#define LANG_ITALIAN 0x10
+#define LANG_SPANISH 0x0a
+#define LANG_PORTUGUESE 0x16
+#define LANG_RUSSIAN 0x19
+#endif
 #include "enums.hpp"
 
 DEFINE_GLOBAL(KeyboardLayout*, gKeybrd_0x204_6F52F4, 0x6F52F4);
@@ -190,7 +201,11 @@ s32 __stdcall KeyboardLayout::GetLayout_4D6000()
 
     memcpy(Buffer, kTwoSpacesStr_620D2C, sizeof(Buffer));
 
+#if !defined(GTA2_MODERN_BUILD)
     GetKeyboardLayoutNameA(szKLID);
+#else
+    strncpy(szKLID, "00000409", sizeof(szKLID));
+#endif
 
     Buffer[0] = szKLID[6];
     Buffer[1] = szKLID[7];

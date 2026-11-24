@@ -208,6 +208,29 @@ class Char
         }
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    inline void RegulateVelocityByRef_433970(const Fix16& threshold)
+    {
+        if (field_38_velocity < threshold)
+        {
+            field_38_velocity += kFpOne256th_678620;
+        }
+        else if (field_38_velocity > threshold)
+        {
+            field_38_velocity -= kFpOne256th_678620;
+        }
+    }
+
+    inline void SetVelocity_433920(Fix16 max_speed)
+    {
+        field_38_velocity = max_speed;
+    }
+
+    inline void SetVelocityByRef_433920(const Fix16& max_speed)
+    {
+        field_38_velocity = max_speed;
+    }
+#else
     // strange, the same 9.6f func but Ped::ChaseTargetStateMachine_46B170 only matches if it pass by ref
     inline void RegulateVelocityByRef_433970(Fix16& threshold)
     {
@@ -231,6 +254,7 @@ class Char
     {
         field_38_velocity = max_speed;
     }
+#endif
 
     inline Ped* get_ped_433A20() const
     {

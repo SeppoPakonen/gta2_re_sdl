@@ -2,6 +2,34 @@
 
 #include "Function.hpp"
 #include "Game.hpp"
+#if defined(GTA2_MODERN_BUILD)
+typedef struct {
+    unsigned long  Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    unsigned char  Data4[ 8 ];
+} GUID;
+
+class NetPlay {
+public:
+    void GetPlayerName_521100(wchar_t* pName, s32 playerIdx) {
+        if (pName) {
+            pName[0] = L'P';
+            pName[1] = L'l';
+            pName[2] = L'a';
+            pName[3] = L'y';
+            pName[4] = L'e';
+            pName[5] = L'r';
+            pName[6] = L'\0';
+        }
+    }
+    u32 GetPlayerCount_461DA0() { return 1; }
+    s32 GetPlayerIdx_409C40() { return 0; }
+    s32 CountActivePlayers_521350() { return 1; }
+};
+inline NetPlay gNetPlay_7071E8;
+
+#else
 // Included this way as a hack so > msvc6 can use these headers too as they've been removed in later versions.
 #include <VC98/Include/DPLAY.H>
 #include <VC98/Include/DPLOBBY.H>
@@ -303,3 +331,4 @@ struct NetPlay
 };
 
 EXTERN_GLOBAL(NetPlay, gNetPlay_7071E8);
+#endif

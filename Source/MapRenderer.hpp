@@ -4,7 +4,11 @@
 #include "Game.hpp"
 #include "map_0x370.hpp"
 #include "fix16.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include "3rdParty/GTA2Hax/d3ddll/d3ddll.hpp" // Vert
+#else
+#include "gbh_graphics.hpp"
+#endif
 
 class Fix16_Point;
 
@@ -53,10 +57,17 @@ class MapRenderer
     EXPORT void ambient_light_tick_4E9EA0();
     EXPORT void draw_4EA190(u16& rotation_and_flip);
     EXPORT void DrawLeftSide_4EA390(u16& left_word);
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT void ProjectVertTop_4EAE00(const Fix16& xpos, const Fix16& ypos, Vert* pVert);
+    EXPORT void ProjectVertBottom_4EAEA0(const Fix16& xCoord, const Fix16& yCoord, Vert* pVert);
+    EXPORT void DrawRightSide_4EAF40(u16& right_word);
+    EXPORT void ProjectVert_4EB940(const Fix16& xpos, const Fix16& ypos, const Fix16& zpos, Vert* pVert);
+#else
     EXPORT void ProjectVertTop_4EAE00(Fix16& xpos, Fix16& ypos, Vert* pVert);
     EXPORT void ProjectVertBottom_4EAEA0(Fix16& xCoord, Fix16& yCoord, Vert* pVert);
     EXPORT void DrawRightSide_4EAF40(u16& right_word);
     EXPORT void ProjectVert_4EB940(Fix16& xpos, Fix16& ypos, Fix16& zpos, Vert* pVert);
+#endif
     EXPORT void DrawTopSide_4EBA60(u16& top_word);
     EXPORT void DrawDiagonalUpLeftFace_4EC450(u16& left_word);
     EXPORT void DrawDiagonalUpRightFace_4EC7A0(u16& right_word);

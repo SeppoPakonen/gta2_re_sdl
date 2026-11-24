@@ -206,4 +206,8 @@ GTA2_ASSERT_SIZEOF_ALWAYS(Camera, 0xBC)
 
 EXTERN_GLOBAL(Camera*, gViewCamera_676978);
 
+#if defined(GTA2_MODERN_BUILD)
+// declared static in Camera.cpp
+#else
 extern inline Fix16 Max_41E130(Fix16 a, Fix16 b);
+#endif

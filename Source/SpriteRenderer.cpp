@@ -72,6 +72,13 @@ SpriteRenderer::~SpriteRenderer()
 MATCH_FUNC(0x5BEE90)
 EXPORT s32 get_rdtsc_5BEE90()
 {
+#if defined(GTA2_MODERN_BUILD)
+#if defined(__x86_64__) || defined(__i386__)
+    return static_cast<s32>(__builtin_ia32_rdtsc());
+#else
+    return static_cast<s32>(gta2::hal::GetHal().pTime ? gta2::hal::GetHal().pTime->GetTicksMicroseconds() : 0);
+#endif
+#else
     // NOTE: Actually is inline assembly, surprisingly
     unsigned __int64 t;
     __asm
@@ -87,6 +94,7 @@ EXPORT s32 get_rdtsc_5BEE90()
         popad
     }
     return static_cast<s32>(t);
+#endif
 }
 
 // Converts a cycle count from get_rdtsc_5BEE90 to milliseconds for the profiler display

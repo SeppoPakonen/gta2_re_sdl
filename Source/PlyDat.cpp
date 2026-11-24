@@ -6,7 +6,9 @@
 #include "error.hpp"
 #include "file.hpp"
 #include "GameSession.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <io.h>
+#endif
 
 DEFINE_GLOBAL(PlyDat*, gPlyDat_6FEAC0, 0x6FEAC0);
 EXTERN_GLOBAL_ARRAY(wchar_t, gEmptyWStr_67DC8C, 2);

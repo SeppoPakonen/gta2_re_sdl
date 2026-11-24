@@ -43,7 +43,11 @@ class Crane
     EXPORT bool IsPickupCarTargetValid_47F3D0();
     EXPORT bool IsDropTransporterTargetValid_47F450();
     EXPORT void UpdateCraneTargets_47F4C0();
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT bool ComputeHookPolar_47F6C0(const Fix16_Point& pPoint, Fix16* pOutF16, Fix16* pOutAng);
+#else
     EXPORT bool ComputeHookPolar_47F6C0(Fix16_Point& pPoint, Fix16* pOutF16, Fix16* pOutAng);
+#endif
     EXPORT void TargetTransporter_47F7F0(Car* pCar);
     EXPORT void PickUpCar_47F930(Car* pCar);
     EXPORT void TryNextDropPosition_47FB40();

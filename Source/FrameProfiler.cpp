@@ -7,8 +7,14 @@
 #include "gtx_0x106C.hpp"
 #include <stdio.h>
 #include <stdarg.h>
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
 #include <mmsystem.h>
+#else
+#include "hal/HalContext.hpp"
+#define OutputDebugStringA(s) fputs((s), stderr)
+#define GetTickCount() (gta2::hal::GetHal().pTime ? gta2::hal::GetHal().pTime->GetTicksMs() : 0)
+#endif
 
 DEFINE_GLOBAL(FrameProfiler*, gMike_A80_6F7328, 0x6F7328);
 

@@ -23,7 +23,11 @@ class Fix16
 {
   public:
     // 9.6f func
+#if defined(GTA2_MODERN_BUILD)
+    static inline s32 __stdcall Round_To_Int_410BF0(const Fix16& input)
+#else
     static inline s32 __stdcall Round_To_Int_410BF0(Fix16& input)
+#endif
     {
         s32 v = input.mValue;
         return (v + 0x2000) >> 14;
@@ -335,14 +339,22 @@ class Fix16
     // inline budget charges the front-end size, 48 here (41 without the local, 46 with a non-const one).
     // Car::ApplyExplosionImpulse_443710 needs >= 48 and CarPhysics::EnforceGearSensitiveMaxSpeed_562D00
     // <= 49; with GetLength_41E260 at 162, Crane::ComputeHookPolar_47F6C0 needs >= 48 too.
+#if defined(GTA2_MODERN_BUILD)
+    inline static Fix16 __stdcall SquareRoot(const Fix16& input)
+#else
     inline static Fix16 __stdcall SquareRoot(Fix16& input)
+#endif
     {
         const f64 value = input.AsDouble();
         return Fix16(sqrt(value));
     }
 
     // SquareRoot forced inline, only for Fix16_Point::GetLength_SqrtForced_43A240 (unexplained)
+#if defined(GTA2_MODERN_BUILD)
+    __forceinline static Fix16 __stdcall SquareRoot_forced(const Fix16& input)
+#else
     __forceinline static Fix16 __stdcall SquareRoot_forced(Fix16& input)
+#endif
     {
         return Fix16(sqrt(input.AsDouble()));
     }
@@ -385,7 +397,11 @@ class Fix16
     EXPORT Fix16 Negate_4086A0() const throw();
 
     // Needed this for a GetLength variant used by ScriptThread::GetSpeed_50E190.
+#if defined(GTA2_MODERN_BUILD)
+    inline static Fix16 __stdcall Abs_negate_out_of_line(const Fix16& input)
+#else
     inline static Fix16 __stdcall Abs_negate_out_of_line(Fix16& input)
+#endif
     {
         if (input.mValue > 0)
         {
@@ -450,7 +466,11 @@ class Fix16
     EXPORT static Fix16 __stdcall Max3_ool_55EEE0(Fix16& first, Fix16& second, Fix16& third);
 
     // NOTE: 10.5 function - matched but inlined
+#if defined(GTA2_MODERN_BUILD)
+    static inline Fix16 __stdcall Max3_55EEE0(const Fix16& first, const Fix16& second, const Fix16& third)
+#else
     static inline Fix16 __stdcall Max3_55EEE0(Fix16& first, Fix16& second, Fix16& third)
+#endif
     {
         if (first > second)
         {
@@ -502,7 +522,11 @@ class Fix16
         return Fix16(mValue + 0x4000, 0);
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT static class Ang16 __stdcall atan2_fixed_405320(const Fix16& y, const Fix16& x);
+#else
     EXPORT static class Ang16 __stdcall atan2_fixed_405320(Fix16& y, Fix16& x);
+#endif
 
   public:
     s32 mValue;

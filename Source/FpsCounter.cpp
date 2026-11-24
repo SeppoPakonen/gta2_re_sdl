@@ -4,7 +4,13 @@
 #include "FpsCounter.hpp"
 #include "Function.hpp"
 #include "Hud.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#define GTA2_GET_TICKS() timeGetTime()
+#else
+#include "hal/HalContext.hpp"
+#define GTA2_GET_TICKS() (gta2::hal::GetHal().pTime ? gta2::hal::GetHal().pTime->GetTicksMs() : 0)
+#endif
 
 DEFINE_GLOBAL(FpsCounter*, gFpsCounter_7055D4, 0x7055D4);
 
@@ -25,8 +31,8 @@ FpsCounter::FpsCounter()
     field_14_draw_fps = 0;
     field_0_update_count = 0;
     field_C_draw_count = 0;
-    field_4_update_start_time = timeGetTime();
-    field_10_draw_start_time = timeGetTime();
+    field_4_update_start_time = GTA2_GET_TICKS();
+    field_10_draw_start_time = GTA2_GET_TICKS();
 }
 
 MATCH_FUNC(0x5BECC0)
@@ -44,14 +50,14 @@ void FpsCounter::UpdateFpsCounters_5BECF0(char_type bDrewFrame, char_type bUpdat
 
         if (field_0_update_count == 100)
         {
-            u32 elapsed_ms = timeGetTime() - field_4_update_start_time;
+            u32 elapsed_ms = GTA2_GET_TICKS() - field_4_update_start_time;
             field_8_update_fps = 100000 / elapsed_ms;
             field_18_execute_game_timer.field_0_time_percent = field_18_execute_game_timer.field_8_accum_time * 100 / elapsed_ms;
             field_24_timer_1.field_0_time_percent = field_24_timer_1.field_8_accum_time * 100 / elapsed_ms;
             field_30_timer_2.field_0_time_percent = field_30_timer_2.field_8_accum_time * 100 / elapsed_ms;
             field_3C_timer_3.field_0_time_percent = field_3C_timer_3.field_8_accum_time * 100 / elapsed_ms;
             field_48_timer_4.field_0_time_percent = field_48_timer_4.field_8_accum_time * 100 / elapsed_ms;
-            field_4_update_start_time = timeGetTime();
+            field_4_update_start_time = GTA2_GET_TICKS();
             field_0_update_count = 0;
             field_18_execute_game_timer.field_8_accum_time = 0;
             field_24_timer_1.field_8_accum_time = 0;
@@ -66,8 +72,8 @@ void FpsCounter::UpdateFpsCounters_5BECF0(char_type bDrewFrame, char_type bUpdat
         field_C_draw_count++;
         if (field_C_draw_count == 100)
         {
-            field_14_draw_fps = 100000 / (timeGetTime() - field_10_draw_start_time);
-            field_10_draw_start_time = timeGetTime();
+            field_14_draw_fps = 100000 / (GTA2_GET_TICKS() - field_10_draw_start_time);
+            field_10_draw_start_time = GTA2_GET_TICKS();
             field_C_draw_count = 0;
         }
     }

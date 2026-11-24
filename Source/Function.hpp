@@ -42,6 +42,7 @@
     #define DEFINE_GLOBAL_ARRAY_INIT(type, name, size, addr, ...) type name[size] = { __VA_ARGS__ }
     #define EXTERN_GLOBAL(type, name) extern type name
     #define EXTERN_GLOBAL_ARRAY(type, name, size) extern type name[size]
+    #define GLOBAL(var, addr)
 
     // On 64-bit architectures, struct sizes differ due to 8-byte pointer
     // alignments, so the fixed 32-bit size assertions are omitted.
@@ -221,6 +222,7 @@ void __stdcall LogFuncAddr(u32 codeAddr, s32 mode);
 
     #define EXTERN_GLOBAL(type, name) extern type name
     #define EXTERN_GLOBAL_ARRAY(type, name, size) extern type name[size]
+    #define GLOBAL(var, addr)
 #endif
 
 #if !defined(GTA2_MODERN_BUILD)

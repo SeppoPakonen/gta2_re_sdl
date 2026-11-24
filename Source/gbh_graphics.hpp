@@ -43,7 +43,22 @@ struct SLight
     float field_C_z;
     DWORD field_10_colour;
 };
-struct STexture;
+struct STexture {
+    u16 field_0_id;
+    u16 field_2;
+    u16 field_4_pal_is_trans;
+    u16 field_6_pal_size;
+    void* field_8_locked_pixels_ptr;
+    u8 field_C;
+    u8 field_D;
+    u16 field_E_width;
+    u16 field_10_height;
+    u8 field_12_bPalIsValid;
+    u8 field_13_flags;
+    u8* field_14_original_pixel_data_ptr;
+    u16* field_18_pPaltData;
+    void* field_1C_ptr;
+};
 struct SVideo;
 struct SImage;
 typedef void (CC* TBeginSceneCB)();

@@ -45,13 +45,21 @@ struct Fix16_Point_POD
         y = new_y;
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    void SetXY_432860(const Fix16& new_x, const Fix16& new_y)
+#else
     void SetXY_432860(Fix16& new_x, Fix16& new_y)
+#endif
     {
         this->x = new_x;
         this->y = new_y;
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    inline void SetFromPolar_41E210(const Fix16& radius, const Ang16& angle)
+#else
     inline void SetFromPolar_41E210(Fix16& radius, Ang16& angle)
+#endif
     {
         x = Ang16::sine_40F500(angle) * radius;
         y = Ang16::cosine_40F520(angle) * radius;
@@ -69,7 +77,11 @@ struct Fix16_Point_POD
         y = ((-x_old) * sin) + (y * cos);
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    Fix16_Point_POD& operator+=(const Fix16_Point& other);
+#else
     Fix16_Point_POD& operator+=(Fix16_Point& other);
+#endif
 
     // Same layout: a POD passed where a Fix16_Point is expected (a free inline site, like the other way)
     operator Fix16_Point&()
@@ -84,7 +96,11 @@ struct Fix16_Point_POD
 class Fix16_Point
 {
   public:
+#if defined(GTA2_MODERN_BUILD)
+    void SetXY_432860(const Fix16& new_x, const Fix16& new_y)
+#else
     void SetXY_432860(Fix16& new_x, Fix16& new_y)
+#endif
     {
         this->x = new_x;
         this->y = new_y;
@@ -167,7 +183,11 @@ class Fix16_Point
         }
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    inline void SetFromPolar_41E210(const Fix16& radius, const Ang16& angle)
+#else
     inline void SetFromPolar_41E210(Fix16& radius, Ang16& angle)
+#endif
     {
         x = Ang16::sine_40F500(angle) * radius;
         y = Ang16::cosine_40F520(angle) * radius;
@@ -218,6 +238,22 @@ class Fix16_Point
     }
 
 
+#if defined(GTA2_MODERN_BUILD)
+    Fix16_Point& operator+=(const Fix16_Point& other)
+    {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    // FUNCTION: 96f 0x4828c0
+    Fix16_Point& operator-=(const Fix16_Point& other)
+    {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+#else
     Fix16_Point& operator+=(Fix16_Point& other)
     {
         x += other.x;
@@ -232,6 +268,7 @@ class Fix16_Point
         y -= other.y;
         return *this;
     }
+#endif
 
     Fix16_Point& MultiplyByFix16_49E3A0(const Fix16& factor)
     {
@@ -243,6 +280,23 @@ class Fix16_Point
     // Out-of-line copy of RotateByAngle_40F6B0, emitted in CarPhysics.cpp
     EXPORT void RotateVelocity_562C20(const Ang16& angle);
 
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT Fix16_Point Multiply_438FE0(const Fix16& in) const;
+    EXPORT Fix16_Point Divide_442CB0(const Fix16& in) const;
+
+    // Divide_442CB0 as a nothrow inline (see DivideInl_55F9E0; CarPhysics::HandleObjectCollision_5606C0,
+    // Car::ApplyExplosionImpulse_443710)
+    inline Fix16_Point DivideInl_442CB0(const Fix16& in) const throw()
+    {
+        return Fix16_Point(x / in, y / in);
+    }
+
+    // Multiply_438FE0 as a nothrow inline (see DivideInl_55F9E0; Car::TryHitchTrailer_442810)
+    inline Fix16_Point MultiplyInl_438FE0(const Fix16& in) const throw()
+    {
+        return Fix16_Point(x * in, y * in);
+    }
+#else
     EXPORT Fix16_Point Multiply_438FE0(Fix16& in) const;
     EXPORT Fix16_Point Divide_442CB0(Fix16& in) const;
 
@@ -258,6 +312,7 @@ class Fix16_Point
     {
         return Fix16_Point(x * in, y * in);
     }
+#endif
 
     // Out-of-line copies emitted in Weapon.cpp (used by DrawElectricArc_5DE910).
     EXPORT Fix16_Point& AddAssign_5E40C0(const Fix16_Point& other);
@@ -458,10 +513,17 @@ class Fix16_Point
         }
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    Fix16_Point operator*(const Fix16& in) const
+    {
+        return Fix16_Point(x * in, y * in);
+    }
+#else
     Fix16_Point operator*(Fix16& in) const
     {
         return Fix16_Point(x * in, y * in);
     }
+#endif
 
     Fix16_Point operator-() const
     {
@@ -471,7 +533,11 @@ class Fix16_Point
     EXPORT Fix16_Point MultBy_442C80(const s32& factor) const;
 
     // 10.0 0x442CB0
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT Fix16_Point operator/(const Fix16& in) const;
+#else
     EXPORT Fix16_Point operator/(Fix16& in) const;
+#endif
 
     // GetLength_41E260 as inlined into NormalizeSafe_442AD0 (out of line helpers where the inline budget ran out)
     inline Fix16 GetLength_inline_442AD0()
@@ -533,7 +599,11 @@ class Fix16_Point
         }
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    EXPORT Fix16_Point NormalizeSafe_442AD0() const;
+#else
     EXPORT Fix16_Point NormalizeSafe_442AD0();
+#endif
 
     EXPORT Ang16 atan2_40ACD0();
 
@@ -565,7 +635,11 @@ class Fix16_Point
     Fix16 y;
 };
 
+#if defined(GTA2_MODERN_BUILD)
+inline Fix16_Point_POD& Fix16_Point_POD::operator+=(const Fix16_Point& other)
+#else
 inline Fix16_Point_POD& Fix16_Point_POD::operator+=(Fix16_Point& other)
+#endif
 {
     x += other.x;
     y += other.y;

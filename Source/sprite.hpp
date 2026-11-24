@@ -15,8 +15,13 @@ EXTERN_GLOBAL(Fix16, gFix16_7035C0);
 EXTERN_GLOBAL(u32, gLightingDrawFlag_7068F4);
 EXTERN_GLOBAL_ARRAY(Vert, gTileVerts_7036D0, 8);
 
+#if defined(GTA2_MODERN_BUILD)
+EXPORT bool __stdcall ComputeScanlineIntersectionX_4F77D0(const Fix16& minX, const Fix16& minY, const Fix16& scanLineX, Fix16_Point& p0, Fix16_Point& p1);
+EXPORT bool __stdcall ComputeScanlineIntersectionY_4F76A0(const Fix16& minX, const Fix16& minY, const Fix16& scanLineY, Fix16_Point& p0, Fix16_Point& p1);
+#else
 EXPORT bool __stdcall ComputeScanlineIntersectionX_4F77D0(Fix16& minX, Fix16& minY, Fix16& scanLineX, Fix16_Point& p0, Fix16_Point& p1);
 EXPORT bool __stdcall ComputeScanlineIntersectionY_4F76A0(Fix16& minX, Fix16& minY, Fix16& scanLineY, Fix16_Point& p0, Fix16_Point& p1);
+#endif
 
 class Car;
 class Char;
@@ -39,12 +44,12 @@ class SpriteShape
     // tested it, so a query doesn't test a shape twice
     void SetCollisionId_446920(u32 id)
     {
-        this->mpNext = reinterpret_cast<SpriteShape*>(id);
+        this->mpNext = reinterpret_cast<SpriteShape*>(static_cast<uintptr_t>(id));
     }
 
     bool CollisionIdIs_446930(u32 id) const
     {
-        return reinterpret_cast<u32>(mpNext) == id;
+        return static_cast<u32>(reinterpret_cast<uintptr_t>(mpNext)) == id;
     }
 
     // 9.6f 0x41E390

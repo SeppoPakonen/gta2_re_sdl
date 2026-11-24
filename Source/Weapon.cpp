@@ -224,7 +224,11 @@ void Weapon::ApplyFastReload_5DCF40()
 
 // 9.6f 0x4CDA90
 MATCH_FUNC(0x5dcf60)
+#if defined(GTA2_MODERN_BUILD)
+Object* Weapon::spawn_bullet_5DCF60(s32 bullet_type, Fix16 xpos, Fix16 ypos, Fix16 zpos, Ang16 rot, const Fix16_Point& speed)
+#else
 Object* Weapon::spawn_bullet_5DCF60(s32 bullet_type, Fix16 xpos, Fix16 ypos, Fix16 zpos, Ang16 rot, Fix16_Point& speed)
+#endif
 {
     // probe_x/probe_y are assigned, not initialised: initialised, VC6 folds them into the call
     // arguments and computes y first
@@ -719,7 +723,11 @@ void Weapon::throwable_5DDFC0(s32 obj_idx, s32 throw_strength, s32 throw_charge)
     }
 }
 
+#if defined(GTA2_MODERN_BUILD)
+EXPORT void __stdcall DrawElectricArc_5DE910(Fix16_Point_POD start_pos, const Fix16_Point& end_pos, Fix16 z_pos);
+#else
 EXPORT void __stdcall DrawElectricArc_5DE910(Fix16_Point_POD start_pos, Fix16_Point& end_pos, Fix16 z_pos);
+#endif
 
 // GetLength_41E260 with both Abs and the x multiply, the add and the square root out of line
 static inline Fix16 BeamLength_5DE4F0(Fix16_Point& d)
@@ -878,7 +886,11 @@ static inline Fix16 BeamLength_5DE910(Fix16_Point& d)
 // (likely the original's by-value start_pos is one of them). `d` is reused for the rest of the way and
 // `len` for the straight segment count, as the original's frame shows.
 MATCH_FUNC(0x5de910)
+#if defined(GTA2_MODERN_BUILD)
+void __stdcall DrawElectricArc_5DE910(Fix16_Point_POD start_pos, const Fix16_Point& end_pos, Fix16 z_pos)
+#else
 void __stdcall DrawElectricArc_5DE910(Fix16_Point_POD start_pos, Fix16_Point& end_pos, Fix16 z_pos)
+#endif
 {
     Fix16_Point d;
     Fix16_Point start;
@@ -973,7 +985,11 @@ void __stdcall DrawElectricArc_5DE910(Fix16_Point_POD start_pos, Fix16_Point& en
 
 // MaxAbsDistance_42A6B0 as ShockPedsAroundSprite_5DF270 inlines it: past the inline budget, Max is the named out-of-line copy
 // Max_44E540 (the Abs calls and the y subtraction go out of line by themselves)
+#if defined(GTA2_MODERN_BUILD)
+static inline Fix16 MaxAbsDistance_5DF270(const Fix16& x1, const Fix16& y1, const Fix16& x2, const Fix16& y2)
+#else
 static inline Fix16 MaxAbsDistance_5DF270(Fix16& x1, Fix16& y1, Fix16& x2, Fix16& y2)
+#endif
 {
     Fix16 diff_x;
     diff_x = x2 - x1;

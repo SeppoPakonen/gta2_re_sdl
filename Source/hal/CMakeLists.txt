@@ -17,3 +17,9 @@ add_library(gta2_hal STATIC
     TheoraMoviePlayer.cpp
 )
 target_include_directories(gta2_hal PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(TARGET SDL2::SDL2)
+    target_link_libraries(gta2_hal PUBLIC SDL2::SDL2)
+elseif(TARGET SDL3::SDL3)
+    target_link_libraries(gta2_hal PUBLIC SDL3::SDL3)
+endif()

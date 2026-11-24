@@ -1,8 +1,63 @@
 #pragma once
 
 #include "Function.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include "3rdParty/GTA2Hax/DmaVideo/DmaVideo.hpp"
 #include <Windows.h>
+#else
+struct SVideo {
+    u32 field_0;
+    u32 field_4_flags;
+    u32 field_8_found_width;
+    u32 field_C_found_height;
+    u32 field_10_found_rgb_bit_count;
+    u32 field_14;
+    u32 field_18;
+    u32 field_1C;
+    u32 field_20;
+    void* field_24;
+    void* field_28;
+    void* field_2C;
+    void* field_30;
+    u32 field_34;
+    u32 field_38;
+    void* field_3C;
+    u32 field_40_full_screen;
+    u32 field_44;
+    u32 field_48_rect_right;
+    u32 field_4C_rect_bottom;
+    void* field_50_surface_pixels_ptr;
+    u32 field_54_surface_pixels_pitch;
+};
+
+struct SVidVersion {
+    u32 mVersion;
+    char mVersionString[255];
+};
+
+typedef SVidVersion* (*T_Vid_GetVersion)();
+typedef SVideo* (*T_Vid_Init_SYS)(void*, u16);
+typedef s32 (*T_Vid_CheckMode)(SVideo*, s32, s32, s32);
+typedef s32 (*T_Vid_FindMode)(SVideo*, s32, s32, s32);
+typedef s32 (*T_Vid_FindFirstMode)(SVideo*);
+typedef s32 (*T_Vid_FindNextMode)(SVideo*);
+typedef s32 (*T_Vid_FindDevice)(SVideo*);
+typedef s32 (*T_Vid_SetDevice)(SVideo*, s32);
+typedef s32 (*T_Vid_CloseScreen)(SVideo*);
+typedef s32 (*T_Vid_SetMode)(SVideo*, void*, s32);
+typedef void (*T_Vid_FlipBuffers)(SVideo*);
+typedef s32 (*T_Vid_ReleaseSurface)(SVideo*, void*);
+typedef s32 (*T_Vid_GrabSurface)(SVideo*, void*);
+typedef s32 (*T_Vid_ShutDown_SYS)(SVideo*);
+typedef s32 (*T_Vid_EnableWrites)(SVideo*);
+typedef s32 (*T_Vid_DisableWrites)(SVideo*);
+typedef s32 (*T_Vid_GetSurface)(SVideo*);
+typedef s32 (*T_Vid_FreeSurface)(SVideo*);
+typedef s32 (*T_Vid_ClearScreen)(SVideo*, u8, u8, u8, s32, s32, s32, s32);
+typedef void* (*T_Vid_WindowProc)(void*, u32, u32, s32);
+typedef s32 (*T_Vid_InitDLL)(void*, void*);
+typedef s32 (*T_Vid_SetGamma)(SVideo*, f32, f32, f32);
+#endif
 
 EXTERN_GLOBAL(SVideo*, gVidSys_7071D0);
 

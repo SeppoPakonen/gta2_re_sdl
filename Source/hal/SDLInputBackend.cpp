@@ -1,6 +1,5 @@
 #include "SDLInputBackend.hpp"
 
-#include <SDL_events.h>
 #include <cstdio>
 
 namespace gta2::hal {

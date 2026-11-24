@@ -4,8 +4,12 @@
 #include "NetPlay.hpp"
 #include "registry.hpp"
 #include "TextTable.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <COMMCTRL.H>
 #include <direct.h>
+#else
+typedef uintptr_t UINT_PTR;
+#endif
 
 DEFINE_GLOBAL(UINT_PTR, gTimerId_6F8A18, 0x6F8A18);
 DEFINE_GLOBAL_ARRAY(char_type, Dest_6F88A4, 256, 0x6F88A4);

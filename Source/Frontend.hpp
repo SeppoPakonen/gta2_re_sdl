@@ -5,6 +5,7 @@
 #include "CreditsLine.hpp"
 #include "CreditsText.hpp"
 #include "TagGame.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
 
 #ifndef DIRECTINPUT_VERSION
@@ -12,6 +13,12 @@
 #endif
 
 #include <Dinput.h>
+#else
+typedef unsigned int UINT;
+typedef const char* LPCSTR;
+typedef struct IDirectInputA* LPDIRECTINPUTA;
+typedef struct IDirectInputDeviceA* LPDIRECTINPUTDEVICEA;
+#endif
 
 class Player;
 class Ang16;
@@ -492,7 +499,7 @@ struct Frontend
 
     EXPORT void DrawTextFixedWidth_4B78B0(wchar_t* pString, u16 text_xpos, u16 text_ypos, u16 font_type, u16 palette, u16 scale, u16 char_width, bool bRightAlign);
 
-    EXPORT void Frontend::DrawScoreTable_4B5430(ScoreTableLine* pStrings,
+    EXPORT void DrawScoreTable_4B5430(ScoreTableLine* pStrings,
                            u16 text_xpos,
                            u16 text_ypos,
                            u16 num_entries,

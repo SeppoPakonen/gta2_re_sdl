@@ -117,7 +117,13 @@ struct DIDATAFORMAT {};
 #define DIK_DOWN       0xD0
 #define DIK_LEFT       0xCB
 #define DIK_RIGHT      0xCD
+#define DIK_HOME       0xC7
+#define DIK_PRIOR      0xC9
+#define DIK_NEXT       0xD1
+#define DIK_DIVIDE     0xB5
 #define DIK_RMENU      0xB8
+#define DIK_BACKSPACE  DIK_BACK
+#define DIK_DELETE     0xD3
 
 #endif
 

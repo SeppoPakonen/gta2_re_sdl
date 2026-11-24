@@ -376,7 +376,12 @@ void ScriptManager::SaveGame_511E10(const char_type* pFileName)
         File::AppendBufferToFile_4A6F50(pFileName, &colBytes, &writeLen);
         if (colBytes)
         {
+#if defined(GTA2_MODERN_BUILD)
+            size_t appendLen = colBytes;
+            File::AppendBufferToFile_4A6F50(pFileName, pColData, &appendLen);
+#else
             File::AppendBufferToFile_4A6F50(pFileName, pColData, &colBytes);
+#endif
         }
     }
 
@@ -385,7 +390,12 @@ void ScriptManager::SaveGame_511E10(const char_type* pFileName)
         File::AppendBufferToFile_4A6F50(pFileName, &blockInfoBytes, &writeLen);
         if (blockInfoBytes)
         {
+#if defined(GTA2_MODERN_BUILD)
+            size_t appendLen = blockInfoBytes;
+            File::AppendBufferToFile_4A6F50(pFileName, pBlockInfo, &appendLen);
+#else
             File::AppendBufferToFile_4A6F50(pFileName, pBlockInfo, &blockInfoBytes);
+#endif
         }
     }
 
@@ -394,7 +404,12 @@ void ScriptManager::SaveGame_511E10(const char_type* pFileName)
         File::AppendBufferToFile_4A6F50(pFileName, &mapSubBytes, &writeLen);
         if (mapSubBytes)
         {
+#if defined(GTA2_MODERN_BUILD)
+            size_t appendLen = mapSubBytes;
+            File::AppendBufferToFile_4A6F50(pFileName, pMapSub, &appendLen);
+#else
             File::AppendBufferToFile_4A6F50(pFileName, pMapSub, reinterpret_cast<u32*>(&mapSubBytes));
+#endif
         }
     }
 }
@@ -402,9 +417,15 @@ void ScriptManager::SaveGame_511E10(const char_type* pFileName)
 MATCH_FUNC(0x511f80)
 void ScriptManager::LoadSave_511F80(const char_type* pFileName)
 {
+#if defined(GTA2_MODERN_BUILD)
+    u32 mapSubLen = 0;
+    u32 blockInfoLen = 0;
+    u32 colDataLen = 0;
+#else
     size_t mapSubLen;
     size_t blockInfoLen;
     size_t colDataLen;
+#endif
     u16** pColData;
     gmp_block_info* pBlockInfo;
     DmapInfoList* pMapSub;

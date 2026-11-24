@@ -2944,7 +2944,11 @@ void CarAI::UpdateChase_44E0C0()
 // https://decomp.me/scratch/Auxlx
 // MaxAbsDistance_42A6B0 past the inline budget: the y difference stays inline, the Abs calls
 // go out of line (budget)
+#if defined(GTA2_MODERN_BUILD)
+static inline Fix16 __stdcall MaxAbsDistanceRawY_451980(const Fix16& x1, const Fix16& y1, const Fix16& x2, const Fix16& y2)
+#else
 static inline Fix16 __stdcall MaxAbsDistanceRawY_451980(Fix16& x1, Fix16& y1, Fix16& x2, Fix16& y2)
+#endif
 {
     Fix16 diff_x = x2 - x1;
     Fix16 diff_y;

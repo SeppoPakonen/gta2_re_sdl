@@ -5426,7 +5426,11 @@ Ang16 Car::GetRadioTowerAngle_442520() const
 EXTERN_GLOBAL(Fix16, kFPZero_6691B0);
 DEFINE_GLOBAL_INIT(Fix16, kAngFix16FullCircle_66A8E4, Fix16(0x18F60, 0), 0x66A8E4);
 DEFINE_GLOBAL_INIT(Fix16, kAngFix16HalfCircle_6691EC, Fix16(0xC7B0, 0), 0x6691EC);
+#if defined(GTA2_MODERN_BUILD)
+inline Fix16 __stdcall WrapAngle_40E790(const Fix16& angle) // 9.6f inlined func
+#else
 inline Fix16 __stdcall WrapAngle_40E790(Fix16& angle) // 9.6f inlined func
+#endif
 {
     Fix16 result = angle;
     for (; result < kFPZero_6691B0; result += kAngFix16FullCircle_66A8E4)
@@ -5444,7 +5448,11 @@ inline Fix16 __stdcall WrapAngle_40E790(Fix16& angle) // 9.6f inlined func
 // TODO: Move
 // https://decomp.me/scratch/GnD4O
 MATCH_FUNC(0x405CE0)
+#if defined(GTA2_MODERN_BUILD)
+EXPORT void __stdcall SmoothApproachAngle_405CE0(const Fix16& target_angle, Fix16& angle_speed, Fix16& angle, const Fix16& accel, const Fix16& max_speed)
+#else
 EXPORT void __stdcall SmoothApproachAngle_405CE0(Fix16& target_angle, Fix16& angle_speed, Fix16& angle, Fix16& accel, Fix16& max_speed)
+#endif
 {
     if (target_angle - angle > kAngFix16HalfCircle_6691EC)
     {

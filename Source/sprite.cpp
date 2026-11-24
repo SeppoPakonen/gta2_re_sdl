@@ -30,7 +30,11 @@
 #include "block_face.hpp"
 
 // Forward declarations: the functions below are in address order
+#if defined(GTA2_MODERN_BUILD)
+EXPORT void __stdcall ProjectOntoAxis_5A5AA0(const Fix16& xpos1, const Fix16& ypos1, const Ang16& angle, const Fix16& xpos2, const Fix16& ypos2, Fix16& outX, Fix16& outY);
+#else
 EXPORT void __stdcall ProjectOntoAxis_5A5AA0(Fix16& xpos1, Fix16& ypos1, Ang16& angle, Fix16& xpos2, Fix16& ypos2, Fix16& outX, Fix16& outY);
+#endif
 static inline void ProjectToScreen_5A5690(Fix16 x, Fix16 y, Fix16 z, Fix16* pOut1, Fix16* pOut2);
 EXTERN_GLOBAL(u16, gDebugColour_626260);
 
@@ -421,7 +425,11 @@ s16 DamageAreaFlags::Delta_48F8B0(u16& sprite_idx, u8& bRet, const u16& palette,
 }
 
 MATCH_FUNC(0x4F76A0)
+#if defined(GTA2_MODERN_BUILD)
+EXPORT bool __stdcall ComputeScanlineIntersectionY_4F76A0(const Fix16& minX, const Fix16& minY, const Fix16& scanLineY, Fix16_Point& p0, Fix16_Point& p1)
+#else
 EXPORT bool __stdcall ComputeScanlineIntersectionY_4F76A0(Fix16& minX, Fix16& minY, Fix16& scanLineY, Fix16_Point& p0, Fix16_Point& p1)
+#endif
 {
     // Raw compares: with Fix16 operators VC6 runs out of inline budget and calls the Fix16_Point ctor
     // out of line. The out-of-line Sub_40AC80 gives the original's EH frame for pd. Remaining diff: the
@@ -457,7 +465,11 @@ EXPORT bool __stdcall ComputeScanlineIntersectionY_4F76A0(Fix16& minX, Fix16& mi
 }
 
 MATCH_FUNC(0x4F77D0)
+#if defined(GTA2_MODERN_BUILD)
+EXPORT bool __stdcall ComputeScanlineIntersectionX_4F77D0(const Fix16& minX, const Fix16& minY, const Fix16& scanLineX, Fix16_Point& p0, Fix16_Point& p1)
+#else
 EXPORT bool __stdcall ComputeScanlineIntersectionX_4F77D0(Fix16& minX, Fix16& minY, Fix16& scanLineX, Fix16_Point& p0, Fix16_Point& p1)
+#endif
 {
     // Same shape as ComputeScanlineIntersectionY_4F76A0, same leftover diff.
     Fix16_Point pd;
@@ -870,6 +882,15 @@ void Sprite::SetDefaultDrawLayerBySpriteType_59E960()
 }
 
 // RotateAndTranslatePoint_42A720 with the out-of-line Fix16 operator copies
+#if defined(GTA2_MODERN_BUILD)
+static inline void __stdcall RotateAndTranslatePoint_ool_42A720(const Fix16& pInX,
+                                                                const Fix16& pInY,
+                                                                const Ang16& pRotAng,
+                                                                const Fix16& pTransX,
+                                                                const Fix16& pTransY,
+                                                                Fix16& pRotTransX,
+                                                                Fix16& pRotTransY)
+#else
 static inline void __stdcall RotateAndTranslatePoint_ool_42A720(Fix16& pInX,
                                                                 Fix16& pInY,
                                                                 Ang16& pRotAng,
@@ -877,6 +898,7 @@ static inline void __stdcall RotateAndTranslatePoint_ool_42A720(Fix16& pInX,
                                                                 Fix16& pTransY,
                                                                 Fix16& pRotTransX,
                                                                 Fix16& pRotTransY)
+#endif
 {
     pRotTransX = ((pInX - pTransX) * Ang16::cosine_40F520(pRotAng))
                      .Add_408660((pInY - pTransY) * Ang16::sine_40F500(pRotAng));
@@ -950,6 +972,15 @@ s16 Sprite::GetTruePalette_59EAA0() const
 // https://decomp.me/scratch/5emc4
 // RotateAndTranslatePoint_42A720 as RotatedRectCollisionSAT_5A0380 gets it once it has run out of
 // inline expansions: the unary minus is the out-of-line copy (Negate_4086A0)
+#if defined(GTA2_MODERN_BUILD)
+static inline void __stdcall RotateAndTranslatePoint_NegOOL_42A720(const Fix16& pInX,
+                                                                  const Fix16& pInY,
+                                                                  const Ang16& pRotAng,
+                                                                  const Fix16& pTransX,
+                                                                  const Fix16& pTransY,
+                                                                  Fix16& pRotTransX,
+                                                                  Fix16& pRotTransY)
+#else
 static inline void __stdcall RotateAndTranslatePoint_NegOOL_42A720(Fix16& pInX,
                                                                   Fix16& pInY,
                                                                   Ang16& pRotAng,
@@ -957,6 +988,7 @@ static inline void __stdcall RotateAndTranslatePoint_NegOOL_42A720(Fix16& pInX,
                                                                   Fix16& pTransY,
                                                                   Fix16& pRotTransX,
                                                                   Fix16& pRotTransY)
+#endif
 {
     pRotTransX = (((pInX - pTransX) * Ang16::cosine_40F520(pRotAng)) + ((pInY - pTransY) * Ang16::sine_40F500(pRotAng)));
     pRotTransY = (((pInX - pTransX).Negate_4086A0() * Ang16::sine_40F500(pRotAng)) + ((pInY - pTransY) * Ang16::cosine_40F520(pRotAng)));
@@ -2623,7 +2655,11 @@ SpriteManager_8::SpriteManager_8()
 }
 
 MATCH_FUNC(0x5A5AA0)
+#if defined(GTA2_MODERN_BUILD)
+EXPORT void __stdcall ProjectOntoAxis_5A5AA0(const Fix16& xpos1, const Fix16& ypos1, const Ang16& angle, const Fix16& xpos2, const Fix16& ypos2, Fix16& outX, Fix16& outY)
+#else
 EXPORT void __stdcall ProjectOntoAxis_5A5AA0(Fix16& xpos1, Fix16& ypos1, Ang16& angle, Fix16& xpos2, Fix16& ypos2, Fix16& outX, Fix16& outY)
+#endif
 {
     outX = (Ang16::cosine_40F520(angle) * (xpos1 - xpos2)) + (Ang16::sine_40F500(angle) * (ypos1 - ypos2));
     outY = (Ang16::sine_40F500(angle) * (xpos2 - xpos1)) + (Ang16::cosine_40F520(angle) * (ypos1 - ypos2));

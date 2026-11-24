@@ -246,10 +246,13 @@ class Ang16
     }
 
     // 9.6f 0x41FC20: the table value is the left operand (this) of the multiply
+#if defined(GTA2_MODERN_BUILD)
+    inline static void __stdcall PolarToCartesian_41FC20(const Ang16& angle, const Fix16& radius, Fix16& ret1, Fix16& ret2);
+    EXPORT static void __stdcall PolarToCartesian_451730(const Ang16& angle, const Fix16& radius, Fix16& ret1, Fix16& ret2);
+#else
     inline static void __stdcall PolarToCartesian_41FC20(Ang16& angle, Fix16& radius, Fix16& ret1, Fix16& ret2);
-
-    // Non-inlined version of above function
     EXPORT static void __stdcall PolarToCartesian_451730(Ang16& angle, Fix16& radius, Fix16& ret1, Fix16& ret2);
+#endif
 
     EXPORT static s32 __stdcall GetAngleFace_4F78F0(const Ang16& angle);
 
@@ -333,7 +336,7 @@ class Ang16
 
     Ang16 MultiplyByFix16_401CB0(const Fix16& factor) const
     {
-        return Ang16(Fix16(rValue) * factor, 0);
+        return Ang16(Fix16(rValue) * factor, static_cast<u8>(0));
     }
 
     // MultiplyByFix16_401CB0 with the multiply and the Fix16* constructor out of line. The product
@@ -375,7 +378,11 @@ class Ang16
 
 #pragma warning(push)
 #pragma warning(disable : 4101)
+#if defined(GTA2_MODERN_BUILD)
+inline void __stdcall Ang16::PolarToCartesian_41FC20(const Ang16& angle, const Fix16& radius, Fix16& ret1, Fix16& ret2)
+#else
 inline void __stdcall Ang16::PolarToCartesian_41FC20(Ang16& angle, Fix16& radius, Fix16& ret1, Fix16& ret2)
+#endif
 {
     // Never read: its optimizer entry is needed by CarAI::UpdateStateMachine_44E560 (docs/match_attempts.md)
     s32 unused;
@@ -401,6 +408,15 @@ class Ang8
     u8 rValue;
 };
 
+#if defined(GTA2_MODERN_BUILD)
+inline void __stdcall RotateAndTranslatePoint_42A720(const Fix16& inX,
+                                                         const Fix16& inY,
+                                                         const Ang16& rotation,
+                                                         const Fix16& transX,
+                                                         const Fix16& transY,
+                                                         Fix16& outX,
+                                                         Fix16& outY)
+#else
 inline void __stdcall RotateAndTranslatePoint_42A720(Fix16& inX,
                                                          Fix16& inY,
                                                          Ang16& rotation,
@@ -408,6 +424,7 @@ inline void __stdcall RotateAndTranslatePoint_42A720(Fix16& inX,
                                                          Fix16& transY,
                                                          Fix16& outX,
                                                          Fix16& outY)
+#endif
 {
     outX = (((inX - transX) * Ang16::cosine_40F520(rotation)) + ((inY - transY) * Ang16::sine_40F500(rotation)));
     outY = ((-(inX - transX) * Ang16::sine_40F500(rotation)) + ((inY - transY) * Ang16::cosine_40F520(rotation)));

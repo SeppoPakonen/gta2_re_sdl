@@ -30,4 +30,6 @@ class GlobalRef
     const u32 mSize;
 };
 
+#ifndef GLOBAL
 #define GLOBAL(var, addr) const GlobalRef gRef_##var##_##addr(&var, addr, sizeof(var));
+#endif
