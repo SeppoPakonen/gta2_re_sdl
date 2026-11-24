@@ -31,7 +31,9 @@ typedef double f64;
 // Endianness abstraction. File formats (.GMP/.STY/.SCR/.GXT) are little-endian;
 // these helpers convert between little-endian on-disk order and host order.
 #if defined(GTA2_MODERN_BUILD)
-    #if defined(__linux__) || defined(__FreeBSD__)
+    #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+        #include <sys/endian.h>
+    #elif defined(__linux__) || defined(__ANDROID__)
         #include <endian.h>
     #endif
 

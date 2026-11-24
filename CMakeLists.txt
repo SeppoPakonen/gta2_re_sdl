@@ -413,6 +413,12 @@ else()
         Source/hal
     )
 
+    # BSD ports prefix support
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD|DragonFly|OpenBSD|NetBSD")
+        include_directories(/usr/local/include)
+        link_directories(/usr/local/lib)
+    endif()
+
     # Collect game source files (excluding legacy Windows-only files and mock DLL stubs)
     file(GLOB_RECURSE GAME_SOURCES
         "Source/*.cpp"
