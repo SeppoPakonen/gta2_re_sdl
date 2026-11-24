@@ -9,12 +9,18 @@
 #include "input.hpp"
 #include "registry.hpp"
 #include "rng.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <io.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "GameSession.hpp"
 #include "input_bits.hpp"
+
+#if defined(GTA2_MODERN_BUILD)
+#include "hal/HalContext.hpp"
+#endif
 
 #define ATTRACT_COUNT 3
 
@@ -50,9 +56,45 @@ EXTERN_GLOBAL(HINSTANCE, gHInstance_708220);
 EXTERN_GLOBAL(s32, gGTA2VersionMajor_708280);
 EXTERN_GLOBAL(s32, gGTA2VersionMinor_708284);
 
+#if !defined(GTA2_MODERN_BUILD)
 DEFINE_GUID(GUID_SysKeyboard, 0x6F1D2B61, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+#endif
 
 const AttractFile attractFiles_62083C[ATTRACT_COUNT] = {"data\\attract\\attr1.rep", "data\\attract\\attr2.rep", "data\\attract\\attr3.rep"};
+
+#if defined(GTA2_MODERN_BUILD)
+
+MATCH_FUNC(0x498730)
+bool InputDevices::acquire_input_device_498730(LPDIRECTINPUTDEVICEA pGamePadDevice)
+{
+    (void)pGamePadDevice;
+    return true;
+}
+
+MATCH_FUNC(0x4987A0)
+void InputDevices::free_input_devices_4987A0()
+{
+}
+
+MATCH_FUNC(0x498800)
+BOOL __stdcall InputDevices::make_input_devices_498800(HINSTANCE hInstance)
+{
+    (void)hInstance;
+    return TRUE;
+}
+
+MATCH_FUNC(0x4989C0)
+void InputDevices::set_game_pad_device_properties_4989C0()
+{
+}
+
+MATCH_FUNC(0x498BA0)
+bool InputDevices::game_pads_init_498BA0()
+{
+    return true;
+}
+
+#else
 
 MATCH_FUNC(0x498730)
 bool InputDevices::acquire_input_device_498730(LPDIRECTINPUTDEVICEA pGamePadDevice)
@@ -283,6 +325,7 @@ bool InputDevices::game_pads_init_498BA0()
     set_game_pad_device_properties_4989C0();
     return true;
 }
+#endif
 
 MATCH_FUNC(0x498C00)
 void InputDevices::get_registry_controls_498C00()
@@ -334,6 +377,95 @@ void InputDevices::SetAltKeyState_498CB0(u32 alt_down)
         gAltKeyDown_67B80C = 0;
     }
 }
+
+#if defined(GTA2_MODERN_BUILD)
+
+MATCH_FUNC(0x498CC0)
+void InputDevices::flush_keyboard_and_gamepad_498CC0()
+{
+}
+
+MATCH_FUNC(0x498D20)
+bool InputDevices::game_pad_read_498D20()
+{
+    return false;
+}
+
+MATCH_FUNC(0x498DA0)
+void InputDevices::read_input_device_498DA0(s32* input_bits, bool bApplyKeyboardControls)
+{
+    auto pInput = gta2::hal::GetHal().pInput;
+    if (!pInput) return;
+
+    for (s32 input = 0; input < 12; input++)
+    {
+        bool bPressed = false;
+        if (gControlDeviceType_67B91C[input] == 0)
+        {
+            u32 dik = static_cast<u32>(gPlayerControlsBinding_67B6E8[input]);
+            if (pInput->IsKeyDown(dik))
+            {
+                bPressed = true;
+            }
+        }
+        else if (gControlDeviceType_67B91C[input] == 1)
+        {
+            s32 binding = gPlayerControlsBinding_67B6E8[input];
+            switch (binding)
+            {
+                case 224:
+                    if (pInput->GetGamepadAxis(0, 0) < -0.5f) bPressed = true;
+                    break;
+                case 225:
+                    if (pInput->GetGamepadAxis(0, 0) > 0.5f) bPressed = true;
+                    break;
+                case 226:
+                    if (pInput->GetGamepadAxis(0, 1) < -0.5f) bPressed = true;
+                    break;
+                case 227:
+                    if (pInput->GetGamepadAxis(0, 1) > 0.5f) bPressed = true;
+                    break;
+                default:
+                    if (pInput->IsGamepadButtonDown(0, binding)) bPressed = true;
+                    break;
+            }
+        }
+
+        u32 vBtns = 0;
+        f32 vX = 0.0f, vY = 0.0f;
+        if (pInput->GetVirtualGamepadState(vBtns, vX, vY))
+        {
+            if (input == 0 && (vY < -0.3f || (vBtns & 1))) bPressed = true;
+            if (input == 1 && (vY > 0.3f || (vBtns & 2)))  bPressed = true;
+            if (input == 2 && vX < -0.3f) bPressed = true;
+            if (input == 3 && vX > 0.3f)  bPressed = true;
+            if (input == 4 && (vBtns & 8)) bPressed = true;
+            if (input == 5 && (vBtns & 4)) bPressed = true;
+        }
+
+        if (bPressed)
+        {
+            if (bApplyKeyboardControls)
+                gInputRecorder_67F8B0.set_input_4CDCF0(input);
+        }
+        else
+        {
+            if (bApplyKeyboardControls && gInputRecorder_67F8B0.IsInputSet_44C050(input))
+                gInputRecorder_67F8B0.clear_input_4CDD10(input);
+        }
+    }
+
+    if (pInput->IsKeyDown(DIK_LMENU) || pInput->IsKeyDown(DIK_RMENU))
+    {
+        SetAltKeyState_498CB0(0x80);
+    }
+    else
+    {
+        SetAltKeyState_498CB0(0x00);
+    }
+}
+
+#else
 
 MATCH_FUNC(0x498CC0)
 void InputDevices::flush_keyboard_and_gamepad_498CC0()
@@ -600,6 +732,7 @@ void InputDevices::read_input_device_498DA0(s32* input_bits, bool bApplyKeyboard
         }
     }
 }
+#endif
 
 // ================================================
 
@@ -679,7 +812,7 @@ void InputRecorder_67F8B0::save_replay_record_4CDE20(u32 inputs)
             if (bConstant_replay_save_67D5C4 == 1)
             {
                 const s32 rec_idx = this->field_75340_rec_buf_idx;
-                u32 rec_len = sizeof(InputRecord);
+                size_t rec_len = sizeof(InputRecord);
                 File::AppendBufferToFile_4A6F50("test\\replay.rep", &field_3C_rec_buff[rec_idx], &rec_len);
             }
 
@@ -739,7 +872,11 @@ void InputRecorder_67F8B0::AppendReplayHeader_4CDF70()
     pDate[strlen(pDate) - 1] = 0;
     sprintf(header.field_8_date, pDate);
 
+#if defined(GTA2_MODERN_BUILD)
+    strncpy(header.field_26_computer_name, "Player", sizeof(header.field_26_computer_name));
+#else
     GetUserNameA(header.field_26_computer_name, &computer_name_size);
+#endif
     strcpy(header.field_44_map_name, gGameSession_67E8E0.GetMapName_4C5940());
     strcpy(header.field_6C_style_name, gGameSession_67E8E0.GetStyleName_4C5950());
     strcpy(header.field_94_script_name, gGameSession_67E8E0.GetScriptName_4C5960());
@@ -847,6 +984,7 @@ void InputRecorder_67F8B0::LoadReplayHeader_4CE380(bool bLoadDebug)
 MATCH_FUNC(0x4ce650)
 void InputRecorder_67F8B0::VerifyAttractFilesExist_4CE650()
 {
+#if !defined(GTA2_MODERN_BUILD)
     const AttractFile* pAttractFile = &attractFiles_62083C[0];
     for (s32 i = 0; i < ATTRACT_COUNT; i++)
     {
@@ -860,6 +998,7 @@ void InputRecorder_67F8B0::VerifyAttractFilesExist_4CE650()
         _findclose(hFind);
         ++pAttractFile;
     }
+#endif
 }
 
 MATCH_FUNC(0x4ce6e0)

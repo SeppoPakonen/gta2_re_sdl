@@ -63,6 +63,10 @@ typedef double f64;
     #ifndef __declspec
         #define __declspec(x)
     #endif
+    #ifndef swprintf
+        #include <cwchar>
+        #define swprintf(buf, ...) swprintf(buf, 1024, __VA_ARGS__)
+    #endif
 #endif
 
 // Portable fallbacks for legacy Windows types

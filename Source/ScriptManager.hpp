@@ -3,7 +3,9 @@
 #include "Fix16_Rect.hpp"
 #include "Function.hpp"
 #include "ScriptThread.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 class Generator;
 

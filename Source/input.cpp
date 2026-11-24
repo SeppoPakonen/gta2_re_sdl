@@ -5,6 +5,10 @@
 #include "error.hpp"
 #include "enums.hpp"
 
+#if defined(GTA2_MODERN_BUILD)
+#include "hal/HalContext.hpp"
+#endif
+
 DEFINE_GLOBAL(LPDIRECTINPUTA, gpDInput_67B804, 0x67B804);
 DEFINE_GLOBAL(LPDIRECTINPUTDEVICEA, gKeyboardDevice_67B5C0, 0x67B5C0);
 DEFINE_GLOBAL(LPDIRECTINPUTDEVICEA, gGamePadDevice_67B6C0, 0x67B6C0);
@@ -16,6 +20,12 @@ HRESULT WINAPI Fn_DirectInputCreateA(HINSTANCE hinst, u32 dwVersion, LPDIRECTINP
 MATCH_FUNC(0x4986D0)
 void __stdcall Input::DirectInputCreate_4986D0(HINSTANCE hInstance)
 {
+#if defined(GTA2_MODERN_BUILD)
+    if (gta2::hal::GetHal().pInput)
+    {
+        gta2::hal::GetHal().pInput->Initialize();
+    }
+#else
     #if defined(__clang__) || (_MSC_VER <= 1200)
     #pragma comment(lib, "DInput.lib")
     // VC6-compatible path
@@ -41,16 +51,23 @@ void __stdcall Input::DirectInputCreate_4986D0(HINSTANCE hInstance)
     {
         FatalError_4A38C0(Gta2Error::DirectInputInitFail, "C:\\Splitting\\Gta2\\Source\\diutil.cpp", 129);
     }
+    #endif
 #endif
-
 }
 
 MATCH_FUNC(0x498710)
 void __stdcall Input::DInputRelease_498710()
 {
+#if defined(GTA2_MODERN_BUILD)
+    if (gta2::hal::GetHal().pInput)
+    {
+        gta2::hal::GetHal().pInput->Shutdown();
+    }
+#else
     if (gpDInput_67B804)
     {
         gpDInput_67B804->Release();
         gpDInput_67B804 = NULL;
     }
+#endif
 }

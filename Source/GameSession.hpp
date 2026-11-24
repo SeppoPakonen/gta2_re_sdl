@@ -3,7 +3,9 @@
 #include "Function.hpp"
 #include "Game.hpp"
 #include "multiplayer_game_type.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 struct FragsByVictim
 {

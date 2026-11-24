@@ -4,7 +4,9 @@
 #include "ang16.hpp"
 #include "fix16.hpp"
 #include "gtx_0x106C.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 class Gang;
 class Sprite;

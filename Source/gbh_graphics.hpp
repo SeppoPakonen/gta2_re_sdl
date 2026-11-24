@@ -6,6 +6,7 @@
 // and with it VC6 drops the EH frame of destructors that delete through an inline destructor
 // (DoorPool::~DoorPool). The original TUs had no STL there, so unless a TU already has <set>/<vector>, their
 // include guards are set and the two members get placeholder types.
+#if !defined(GTA2_MODERN_BUILD)
 #if !defined(_SET_) && !defined(_VECTOR_)
 #define _SET_
 #define _VECTOR_
@@ -25,8 +26,28 @@ template <class T> class set
 } // namespace std
 #endif
 #include "3rdParty/GTA2Hax/d3ddll/d3ddll.hpp"
-#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#else
+struct Vert
+{
+    float x, y, z, w;
+    DWORD diff;
+    DWORD spec;
+    float u, v;
+};
+struct SLight
+{
+    DWORD field_0;
+    float field_4_x;
+    float field_8_y;
+    float field_C_z;
+    DWORD field_10_colour;
+};
+struct STexture;
+struct SVideo;
+struct SImage;
+typedef void (CC* TBeginSceneCB)();
+typedef void (CC* TEndSceneCB)();
 #endif
 
 EXPORT s32 __stdcall GBH_GraphicsLoadDll_5EA680(const char_type* lpLibFileName);

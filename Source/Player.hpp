@@ -9,7 +9,9 @@
 #include "BonusTracker.hpp"
 #include "TagGame.hpp"
 #include "PlayerCrimeStats.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 class SoundObject;
 class Ped;

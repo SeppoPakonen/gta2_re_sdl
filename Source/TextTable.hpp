@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Function.hpp"
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 struct TextKeyEntry
 {

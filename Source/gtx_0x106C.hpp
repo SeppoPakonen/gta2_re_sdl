@@ -3,7 +3,9 @@
 #include "Function.hpp"
 #include "enums.hpp"
 #include <cstdio>
+#if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
+#endif
 
 struct palette_base
 {
