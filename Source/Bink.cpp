@@ -10,6 +10,110 @@ DEFINE_GLOBAL(char_type, gBinkActiveSlot_6F83FF, 0x6F83FF);
 DEFINE_GLOBAL_ARRAY(u32, gBinkSummary_6F8250, 30, 0x6F8250);
 DEFINE_GLOBAL(s32, gBinkPixelFormat_6F81B0, 0x6F81B0);
 
+#if defined(GTA2_MODERN_BUILD)
+#include "hal/HalContext.hpp"
+
+MATCH_FUNC(0x513210)
+void __stdcall Bink::Reset_513210()
+{
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Close();
+    }
+}
+
+MATCH_FUNC(0x513240)
+bool Bink::TickFrame_513240()
+{
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        return pMovie->TickFrame();
+    }
+    return false;
+}
+
+MATCH_FUNC(0x513340)
+void Bink::CloseSlot1_513340()
+{
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Close();
+    }
+}
+
+MATCH_FUNC(0x513390)
+void Bink::CloseSlot2_513390()
+{
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Close();
+    }
+}
+
+MATCH_FUNC(0x5133E0)
+void __stdcall Bink::OpenSlot2_5133E0(const char_type* pFileName, HDIGDRIVER hDriver)
+{
+    (void)hDriver;
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Open(pFileName, gta2::hal::GetHal().pRenderer, gta2::hal::GetHal().pAudio);
+    }
+}
+
+MATCH_FUNC(0x513560)
+void __stdcall Bink::OpenSlot1_513560(const char_type* pFileName, HDIGDRIVER hDriver)
+{
+    (void)hDriver;
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Open(pFileName, gta2::hal::GetHal().pRenderer, gta2::hal::GetHal().pAudio);
+    }
+}
+
+MATCH_FUNC(0x5136D0)
+void __stdcall Bink::CheckWindowPos_5136D0(s32* pNewWindowX, s32* pNewWindowY)
+{
+    (void)pNewWindowX;
+    (void)pNewWindowY;
+}
+
+MATCH_FUNC(0x513720)
+void Bink::ResetBufferOffset_513720()
+{
+}
+
+MATCH_FUNC(0x513760)
+bool Bink::IsDDBufferOpen_513760()
+{
+    return false;
+}
+
+MATCH_FUNC(0x513770)
+bool Bink::IsUsingDDBuffer_513770()
+{
+    return false;
+}
+
+MATCH_FUNC(0x513790)
+char_type Bink::GetActiveSlot_513790()
+{
+    return gBinkActiveSlot_6F83FF;
+}
+
+MATCH_FUNC(0x5137A0)
+void __stdcall Bink::SetActiveSlot_5137A0(char_type slot)
+{
+    gBinkActiveSlot_6F83FF = slot;
+}
+
+MATCH_FUNC(0x5137B0)
+void __stdcall Bink::SetDDState_5137B0(char_type state)
+{
+    gBinkDDState_6F83FE = state;
+}
+
+#else
+
 enum BinkDDState
 {
     BinkDD_Closed = 0,
@@ -339,3 +443,4 @@ void __stdcall Bink::SetDDState_5137B0(char_type state)
 {
     gBinkDDState_6F83FE = state;
 }
+#endif

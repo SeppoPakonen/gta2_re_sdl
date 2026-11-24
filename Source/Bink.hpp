@@ -1,5 +1,6 @@
 #pragma once
 
+#if !defined(GTA2_MODERN_BUILD)
 #include "3rdParty/bink.h"
 #include "3rdParty/mss.h"
 #include "Draw.hpp"
@@ -10,6 +11,12 @@
 #include "error.hpp"
 #include "winmain.hpp"
 #include <windows.h>
+#else
+#include "Function.hpp"
+struct BINK {};
+struct BINKBUFFER {};
+typedef void* HDIGDRIVER;
+#endif
 
 EXTERN_GLOBAL(BINK*, gBinkHandleSlot2_6F83B0);
 EXTERN_GLOBAL(BINK*, gBinkHandleSlot1_6F8168);

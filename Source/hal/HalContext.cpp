@@ -1,9 +1,11 @@
 #include "HalContext.hpp"
+#include "NullMoviePlayer.hpp"
 #include <cstdio>
 
 namespace gta2::hal {
 
 static HalContext sHalInstance;
+static NullMoviePlayer sDefaultMovie;
 
 HalContext& GetHal() {
     return sHalInstance;
@@ -11,7 +13,9 @@ HalContext& GetHal() {
 
 bool HalContext::Initialize(const char* backendName) {
     printf("[HAL] Initializing backend: %s\n", backendName ? backendName : "Default");
-    // Subsystem pointers will be wired up by specific backend initializers
+    if (!pMovie) {
+        pMovie = &sDefaultMovie;
+    }
     return true;
 }
 
