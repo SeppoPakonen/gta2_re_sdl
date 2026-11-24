@@ -78,43 +78,69 @@ std::string VfsFileSystem::NormalizePath(std::string path) {
     return path;
 }
 
+void VfsFileSystem::AddSearchRoot(const char* directoryPath) {
+    std::error_code ec;
+    if (directoryPath && fs::exists(directoryPath, ec)) {
+        mSearchRoots.emplace_back(directoryPath);
+    }
+}
+
 std::string VfsFileSystem::ResolvePath(const char* virtualPath) {
     std::string norm = NormalizePath(virtualPath ? virtualPath : "");
     fs::path target(norm);
 
-    // Check user directory first (for modified configs / saves)
-    fs::path userPath = fs::path(mUserDir) / target;
-    if (fs::exists(userPath)) {
-        return userPath.string();
+    // Ordered read search list: user dir -> application (base) dir -> extra roots.
+    std::vector<std::string> roots;
+    roots.push_back(mUserDir);
+    roots.push_back(mBaseDir);
+    for (const auto& r : mSearchRoots) {
+        roots.push_back(r);
     }
 
-    // Check base directory
-    fs::path basePath = fs::path(mBaseDir) / target;
-    if (fs::exists(basePath)) {
-        return basePath.string();
-    }
+    std::string firstResolved;
+    bool haveFirst = false;
 
-    // Case-insensitive fallback traversal
-    fs::path current = mBaseDir;
-    for (const auto& part : target) {
-        std::string partStr = part.string();
-        bool found = false;
+    for (const auto& root : roots) {
         std::error_code ec;
-        if (fs::exists(current, ec) && fs::is_directory(current, ec)) {
-            for (const auto& entry : fs::directory_iterator(current)) {
-                std::string entryName = entry.path().filename().string();
-                if (strcasecmp(entryName.c_str(), partStr.c_str()) == 0) {
-                    current /= entryName;
-                    found = true;
-                    break;
+        fs::path direct = fs::path(root) / target;
+        if (fs::exists(direct, ec)) {
+            return direct.string();
+        }
+
+        // Case-insensitive fallback traversal within this root.
+        fs::path current = root;
+        bool resolvedAll = true;
+        for (const auto& part : target) {
+            std::string partStr = part.string();
+            bool found = false;
+            std::error_code ec2;
+            if (fs::exists(current, ec2) && fs::is_directory(current, ec2)) {
+                for (const auto& entry : fs::directory_iterator(current)) {
+                    std::string entryName = entry.path().filename().string();
+                    if (strcasecmp(entryName.c_str(), partStr.c_str()) == 0) {
+                        current /= entryName;
+                        found = true;
+                        break;
+                    }
                 }
             }
+            if (!found) {
+                current /= partStr;
+                resolvedAll = false;
+                break;
+            }
         }
-        if (!found) {
-            current /= partStr;
+
+        if (resolvedAll && fs::exists(current, ec)) {
+            return current.string();
+        }
+        if (!haveFirst) {
+            firstResolved = current.string();
+            haveFirst = true;
         }
     }
-    return current.string();
+
+    return haveFirst ? firstResolved : (fs::path(mBaseDir) / target).string();
 }
 
 bool VfsFileSystem::FileExists(const char* virtualPath) {
@@ -129,8 +155,24 @@ s64 VfsFileSystem::GetFileSize(const char* virtualPath) {
 }
 
 IFileStream* VfsFileSystem::OpenFile(const char* virtualPath, const char* mode) {
-    std::string resolved = ResolvePath(virtualPath);
-    std::FILE* fp = std::fopen(resolved.c_str(), mode ? mode : "rb");
+    if (!mode) {
+        mode = "rb";
+    }
+
+    bool isWrite = (std::strchr(mode, 'w') != nullptr || std::strchr(mode, 'a') != nullptr ||
+                    std::strchr(mode, '+') != nullptr);
+
+    std::string fullPath;
+    if (isWrite) {
+        // Writes always go to the writable user directory.
+        fullPath = (fs::path(mUserDir) / NormalizePath(virtualPath ? virtualPath : "")).string();
+        std::error_code ec;
+        fs::create_directories(fs::path(fullPath).parent_path(), ec);
+    } else {
+        fullPath = ResolvePath(virtualPath);
+    }
+
+    std::FILE* fp = std::fopen(fullPath.c_str(), mode);
     if (!fp) {
         return nullptr;
     }
@@ -164,7 +206,8 @@ bool VfsFileSystem::ReadEntireFile(const char* virtualPath, std::vector<u8>& out
 }
 
 bool VfsFileSystem::WriteEntireFile(const char* virtualPath, const void* pData, size_t size) {
-    std::string resolved = ResolvePath(virtualPath);
+    // Writes always go to the writable user directory.
+    std::string resolved = (fs::path(mUserDir) / NormalizePath(virtualPath ? virtualPath : "")).string();
 
     // Ensure the parent directory exists.
     std::error_code ec;

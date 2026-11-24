@@ -3,6 +3,7 @@
 #include "IFileSystem.hpp"
 #include <cstdio>
 #include <string>
+#include <vector>
 
 namespace gta2::hal {
 
@@ -41,12 +42,16 @@ class VfsFileSystem : public IFileSystem {
 
     std::string ResolvePath(const char* virtualPath) override;
 
+    // Register an additional read-only asset search root (e.g. system data dir).
+    void AddSearchRoot(const char* directoryPath);
+
     // Convert backslashes to forward slashes and strip redundant leading "./".
     static std::string NormalizePath(std::string path);
 
   private:
     std::string mBaseDir;
     std::string mUserDir;
+    std::vector<std::string> mSearchRoots;
 };
 
 } // namespace gta2::hal
