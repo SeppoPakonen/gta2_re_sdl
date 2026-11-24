@@ -5,5 +5,6 @@ add_library(gta2_hal STATIC
     SDLWindowSystem.cpp
     SDLEventSystem.cpp
     SDLTimeSystem.cpp
+    OpenGLRenderer.cpp
 )
 target_include_directories(gta2_hal PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
