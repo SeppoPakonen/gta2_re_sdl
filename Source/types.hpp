@@ -3,6 +3,8 @@
 #if defined(GTA2_MODERN_BUILD)
     #include <cstdint>
     #include <cstddef>
+    #include <cstdarg>
+    #include <cstdio>
 #endif
 
 typedef unsigned char u8;
@@ -113,11 +115,89 @@ typedef double f64;
     #define wcscmp gta2_wcscmp
     #define wcsncmp gta2_wcsncmp
 
+    inline int gta2_vswprintf(wchar_t* buf, size_t maxLen, const wchar_t* fmt, va_list args) {
+        if (!buf || maxLen == 0 || !fmt) return 0;
+        size_t out = 0;
+        while (*fmt && out + 1 < maxLen) {
+            if (*fmt != L'%') {
+                buf[out++] = *fmt++;
+                continue;
+            }
+            fmt++; // skip %
+            if (*fmt == L'%') {
+                buf[out++] = L'%';
+                fmt++;
+                continue;
+            }
+            char spec[32] = "%";
+            int si = 1;
+            while (*fmt && (*fmt == L'-' || *fmt == L'+' || *fmt == L'0' || *fmt == L' ' || *fmt == L'#' ||
+                            (*fmt >= L'0' && *fmt <= L'9') || *fmt == L'.' || *fmt == L'l' || *fmt == L'h')) {
+                if (si < 30) spec[si++] = static_cast<char>(*fmt);
+                fmt++;
+            }
+            wchar_t type = *fmt ? *fmt++ : L'\0';
+            if (type == L's') {
+                const wchar_t* s = va_arg(args, const wchar_t*);
+                if (!s) s = L"(null)";
+                while (*s && out + 1 < maxLen) {
+                    buf[out++] = *s++;
+                }
+            } else if (type == L'S') {
+                const char* s = va_arg(args, const char*);
+                if (!s) s = "(null)";
+                while (*s && out + 1 < maxLen) {
+                    buf[out++] = static_cast<wchar_t>(*s++);
+                }
+            } else if (type == L'c') {
+                int c = va_arg(args, int);
+                buf[out++] = static_cast<wchar_t>(c);
+            } else if (type == L'd' || type == L'i') {
+                spec[si++] = 'd';
+                spec[si] = 0;
+                int val = va_arg(args, int);
+                char tmp[64];
+                snprintf(tmp, sizeof(tmp), spec, val);
+                for (char* p = tmp; *p && out + 1 < maxLen; ++p) {
+                    buf[out++] = static_cast<wchar_t>(*p);
+                }
+            } else if (type == L'u' || type == L'x' || type == L'X' || type == L'o') {
+                spec[si++] = static_cast<char>(type);
+                spec[si] = 0;
+                unsigned int val = va_arg(args, unsigned int);
+                char tmp[64];
+                snprintf(tmp, sizeof(tmp), spec, val);
+                for (char* p = tmp; *p && out + 1 < maxLen; ++p) {
+                    buf[out++] = static_cast<wchar_t>(*p);
+                }
+            } else if (type == L'f') {
+                spec[si++] = 'f';
+                spec[si] = 0;
+                double val = va_arg(args, double);
+                char tmp[64];
+                snprintf(tmp, sizeof(tmp), spec, val);
+                for (char* p = tmp; *p && out + 1 < maxLen; ++p) {
+                    buf[out++] = static_cast<wchar_t>(*p);
+                }
+            }
+        }
+        buf[out] = 0;
+        return static_cast<int>(out);
+    }
+
+    inline int gta2_swprintf(wchar_t* buf, const wchar_t* fmt, ...) {
+        va_list args;
+        va_start(args, fmt);
+        int ret = gta2_vswprintf(buf, 1024, fmt, args);
+        va_end(args);
+        return ret;
+    }
+
     #ifndef swprintf
-        #define swprintf(buf, ...) swprintf(buf, 1024, __VA_ARGS__)
+        #define swprintf gta2_swprintf
     #endif
     #ifndef vswprintf
-        #define vswprintf(buf, fmt, args) vswprintf(buf, 1024, fmt, args)
+        #define vswprintf(buf, fmt, args) gta2_vswprintf(buf, 1024, fmt, args)
     #endif
 #endif
     #ifndef wsprintfA
