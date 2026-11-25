@@ -1247,13 +1247,17 @@ bool cSampleManager::SoundInit_58D6C0(s32* /*not_used*/)
 
     // Load samples from SDT/RAW via AudioContainerParser and register with HAL audio.
     const char_type* audioFiles[] = {
-        "data\\audio\\wil.sdt", "data\\audio\\bill.sdt",
-        "data\\audio\\scream.sdt", "data\\audio\\gun.sdt",
-        "data\\audio\\explode.sdt"
+        "data\\audio\\wil.sdt",
+        "data\\audio\\fstyle.sdt"
     };
     std::vector<std::pair<std::string, std::string>> filePairs;
     for (const char_type* sdtName : audioFiles) {
-        filePairs.emplace_back(sdtName, sdtName);
+        std::string sdt(sdtName);
+        std::string raw = sdt;
+        if (raw.size() >= 4) {
+            raw.replace(raw.size() - 4, 4, ".raw");
+        }
+        filePairs.emplace_back(sdt, raw);
     }
 
     bool anyLoaded = false;
