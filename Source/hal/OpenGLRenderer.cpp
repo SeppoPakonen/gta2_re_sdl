@@ -33,6 +33,8 @@ constexpr GLenum GL_TRIANGLES = 0x0004;
 constexpr GLenum GL_TRIANGLE_FAN = 0x0006;
 constexpr GLenum GL_SRC_ALPHA = 0x0302;
 constexpr GLenum GL_ONE_MINUS_SRC_ALPHA = 0x0303;
+constexpr GLenum GL_FRONT = 0x0404;
+constexpr GLenum GL_BACK = 0x0405;
 constexpr GLenum GL_ONE = 1;
 constexpr GLenum GL_ZERO = 0;
 constexpr GLenum GL_TEXTURE_2D = 0x0DE1;
@@ -74,6 +76,7 @@ struct GLFunctions {
     void (*glActiveTexture)(GLenum);
     void (*glPixelStorei)(GLenum, GLint);
     void (*glReadPixels)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void*);
+    void (*glReadBuffer)(GLenum);
 
     void (*glGenBuffers)(GLsizei, GLuint*);
     void (*glDeleteBuffers)(GLsizei, const GLuint*);
@@ -163,6 +166,7 @@ bool LoadAllGL() {
     LoadProc(g_gl.glActiveTexture, "glActiveTexture");
     LoadProc(g_gl.glPixelStorei, "glPixelStorei");
     LoadProc(g_gl.glReadPixels, "glReadPixels");
+    LoadProc(g_gl.glReadBuffer, "glReadBuffer");
 
     LoadProc(g_gl.glGenBuffers, "glGenBuffers");
     LoadProc(g_gl.glDeleteBuffers, "glDeleteBuffers");
@@ -497,20 +501,23 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     if (desc.pPixels && desc.bitsPerPixel == 8) {
         const size_t pixelCount = static_cast<size_t>(desc.width) * desc.height;
         rgbaBuffer.resize(pixelCount);
-        if (desc.pPaletteRGBA) {
-            const u8* src = static_cast<const u8*>(desc.pPixels);
-            for (size_t i = 0; i < pixelCount; ++i) {
-                u8 val = src[i];
-                rgbaBuffer[i] = (val == 0 && desc.bTransparent) ? 0 : desc.pPaletteRGBA[val];
-            }
-        } else if (desc.pPalette) {
-            Expand8BitTo32Bit(static_cast<const u8*>(desc.pPixels), desc.pPalette,
-                             rgbaBuffer.data(), pixelCount, desc.bTransparent);
-        } else {
-            const u8* src = static_cast<const u8*>(desc.pPixels);
-            for (size_t i = 0; i < pixelCount; ++i) {
-                u8 val = src[i];
-                rgbaBuffer[i] = (val == 0 && desc.bTransparent) ? 0 : (0xFF000000 | (val << 16) | (val << 8) | val);
+        const u8* src = static_cast<const u8*>(desc.pPixels);
+        const size_t srcStride = (desc.width <= 256) ? 256 : desc.width;
+
+        for (u16 y = 0; y < desc.height; ++y) {
+            const u8* srcRow = src + static_cast<size_t>(y) * srcStride;
+            u32* dstRow = rgbaBuffer.data() + static_cast<size_t>(y) * desc.width;
+            for (u16 x = 0; x < desc.width; ++x) {
+                const u8 val = srcRow[x];
+                if (val == 0 && desc.bTransparent) {
+                    dstRow[x] = 0;
+                } else if (desc.pPaletteRGBA) {
+                    dstRow[x] = desc.pPaletteRGBA[val];
+                } else if (desc.pPalette) {
+                    dstRow[x] = Convert16BitTo32Bit(desc.pPalette[val], false);
+                } else {
+                    dstRow[x] = 0xFF000000 | (val << 16) | (val << 8) | val;
+                }
             }
         }
         uploadPixels = rgbaBuffer.data();
@@ -567,20 +574,23 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     if (info.pPixels && info.bitsPerPixel == 8) {
         const size_t pixelCount = static_cast<size_t>(info.width) * info.height;
         rgbaBuffer.resize(pixelCount);
-        if (info.pPaletteRGBA) {
-            const u8* src = static_cast<const u8*>(info.pPixels);
-            for (size_t i = 0; i < pixelCount; ++i) {
-                u8 val = src[i];
-                rgbaBuffer[i] = (val == 0 && info.bTransparent) ? 0 : info.pPaletteRGBA[val];
-            }
-        } else if (info.pPalette) {
-            Expand8BitTo32Bit(static_cast<const u8*>(info.pPixels), info.pPalette,
-                             rgbaBuffer.data(), pixelCount, info.bTransparent);
-        } else {
-            const u8* src = static_cast<const u8*>(info.pPixels);
-            for (size_t i = 0; i < pixelCount; ++i) {
-                u8 val = src[i];
-                rgbaBuffer[i] = (val == 0 && info.bTransparent) ? 0 : (0xFF000000 | (val << 16) | (val << 8) | val);
+        const u8* src = static_cast<const u8*>(info.pPixels);
+        const size_t srcStride = (info.width <= 256) ? 256 : info.width;
+
+        for (u16 y = 0; y < info.height; ++y) {
+            const u8* srcRow = src + static_cast<size_t>(y) * srcStride;
+            u32* dstRow = rgbaBuffer.data() + static_cast<size_t>(y) * info.width;
+            for (u16 x = 0; x < info.width; ++x) {
+                const u8 val = srcRow[x];
+                if (val == 0 && info.bTransparent) {
+                    dstRow[x] = 0;
+                } else if (info.pPaletteRGBA) {
+                    dstRow[x] = info.pPaletteRGBA[val];
+                } else if (info.pPalette) {
+                    dstRow[x] = Convert16BitTo32Bit(info.pPalette[val], false);
+                } else {
+                    dstRow[x] = 0xFF000000 | (val << 16) | (val << 8) | val;
+                }
             }
         }
         uploadPixels = rgbaBuffer.data();
@@ -637,6 +647,17 @@ bool OpenGLRenderer::CaptureScreenshot(const char* ppmPath) {
     std::vector<u8> pixels(static_cast<size_t>(w) * h * 3);
     g_gl.glPixelStorei(GL_PACK_ALIGNMENT, 1);
     g_gl.glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+
+    // If GL_BACK was empty/black (e.g. called after buffer swap), try reading from GL_FRONT
+    size_t nonZero = 0;
+    for (size_t i = 0; i < pixels.size(); ++i) {
+        if (pixels[i] != 0) { nonZero++; break; }
+    }
+    if (nonZero == 0 && g_gl.glReadBuffer) {
+        g_gl.glReadBuffer(GL_FRONT);
+        g_gl.glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+        g_gl.glReadBuffer(GL_BACK);
+    }
 
     FILE* fp = std::fopen(ppmPath, "wb");
     if (!fp) {

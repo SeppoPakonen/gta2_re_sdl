@@ -117,12 +117,31 @@ bool RunGameFrame_4DA850() {
             bInputsPending_6F5760 = false;
         }
     }
+
+    if (!drew_frame && !updated_logic && gta2::hal::GetHal().pTime) {
+        gta2::hal::GetHal().pTime->SleepMs(1);
+    }
+
     return exit_requested;
 }
+
+static int sTotalDrawnFrames = 0;
 
 void Draw_4DA7B0() {
     gGame_0x40_67E008->Draw_4B92D0();
     DiagnosticUpdateTextEvents();
+
+    sTotalDrawnFrames++;
+
+    const char* pScreenshotEnv = std::getenv("GTA2_SCREENSHOT_PATH");
+    const char* pMaxFramesEnv = std::getenv("GTA2_DEMO_FRAMES");
+    const int maxFrames = pMaxFramesEnv ? std::atoi(pMaxFramesEnv) : 0;
+    if (pScreenshotEnv && gta2::hal::GetHal().pRenderer &&
+        (sTotalDrawnFrames == 1 || sTotalDrawnFrames == 5 || sTotalDrawnFrames == (maxFrames > 0 ? (maxFrames / 2) : 50))) {
+        bool ok = gta2::hal::GetHal().pRenderer->CaptureScreenshot(pScreenshotEnv);
+        std::printf("[Screenshot] Saved frame %d to %s: %s\n", sTotalDrawnFrames, pScreenshotEnv, ok ? "SUCCESS" : "FAILED");
+    }
+
     pVid_FlipBuffers(gVidSys_7071D0);
     if (bSkip_lid_67D546 || bSkip_top_67D574 || bSkip_bottom_67D4E7
         || bSkip_left_67D6BF || bSkip_right_67D4E4) {
@@ -154,14 +173,9 @@ bool GameLoop_StepFrame() {
         gta2::hal::GetHal().pAudio->Update();
     }
 
-    // Run a game frame.
+    // Run a game frame (pVid_FlipBuffers inside Draw_4DA7B0 swaps buffers when a frame is rendered).
     if (RunGameFrame_4DA850()) {
         return false;
-    }
-
-    // Swap display buffers via HAL.
-    if (gta2::hal::GetHal().pWindow) {
-        gta2::hal::GetHal().pWindow->SwapBuffers();
     }
 
     static int sFrameCount = 0;
@@ -204,13 +218,7 @@ bool GameLoop_StepFrame() {
     const char* pMaxFramesEnv = std::getenv("GTA2_DEMO_FRAMES");
     const int maxFrames = pMaxFramesEnv ? std::atoi(pMaxFramesEnv) : 0;
 
-    const char* pScreenshotEnv = std::getenv("GTA2_SCREENSHOT_PATH");
-    if (pScreenshotEnv && gta2::hal::GetHal().pRenderer &&
-        (sFrameCount == (maxFrames > 0 ? (maxFrames / 2) : 100) || sFrameCount == maxFrames)) {
-        gta2::hal::GetHal().pRenderer->CaptureScreenshot(pScreenshotEnv);
-    }
-
-    if (maxFrames > 0 && sFrameCount >= maxFrames) {
+    if (maxFrames > 0 && sTotalDrawnFrames >= maxFrames) {
         return false;
     }
 

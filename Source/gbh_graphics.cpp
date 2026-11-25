@@ -105,15 +105,17 @@ static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s
     Vert tileVerts[4];
     std::memcpy(tileVerts, pData, 4 * sizeof(Vert));
 
+    u32 oldFlags = flags;
+
     if (!(flags & 0x4000)) {
         tileVerts[0].u = 0.5f;
         tileVerts[0].v = 0.5f;
-        tileVerts[1].u = 63.4999f;
+        tileVerts[1].u = 63.499901f;
         tileVerts[1].v = 0.5f;
-        tileVerts[2].u = 63.4999f;
-        tileVerts[2].v = 63.4999f;
+        tileVerts[2].u = 63.499901f;
+        tileVerts[2].v = 63.499901f;
         tileVerts[3].u = 0.5f;
-        tileVerts[3].v = 63.4999f;
+        tileVerts[3].v = 63.499901f;
     }
 
     struct UV { float u, v; };
@@ -123,25 +125,54 @@ static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s
         uvs[i].v = tileVerts[i].v;
     }
 
+    bool updated = false;
     switch (flags & 0x60) {
         case 0x20:
             tileVerts[0].u = uvs[3].u; tileVerts[0].v = uvs[3].v;
             tileVerts[1].u = uvs[0].u; tileVerts[1].v = uvs[0].v;
             tileVerts[2].u = uvs[1].u; tileVerts[2].v = uvs[1].v;
             tileVerts[3].u = uvs[2].u; tileVerts[3].v = uvs[2].v;
+            updated = true;
             break;
         case 0x40:
-            tileVerts[0].u = uvs[2].u; tileVerts[0].v = uvs[2].v;
-            tileVerts[1].u = uvs[3].u; tileVerts[1].v = uvs[3].v;
-            tileVerts[2].u = uvs[0].u; tileVerts[2].v = uvs[0].v;
-            tileVerts[3].u = uvs[1].u; tileVerts[3].v = uvs[1].v;
+            oldFlags = flags ^ 0x18;
             break;
         case 0x60:
             tileVerts[0].u = uvs[1].u; tileVerts[0].v = uvs[1].v;
             tileVerts[1].u = uvs[2].u; tileVerts[1].v = uvs[2].v;
             tileVerts[2].u = uvs[3].u; tileVerts[2].v = uvs[3].v;
             tileVerts[3].u = uvs[0].u; tileVerts[3].v = uvs[0].v;
+            updated = true;
             break;
+    }
+
+    if (updated) {
+        for (int i = 0; i < 4; i++) {
+            uvs[i].u = tileVerts[i].u;
+            uvs[i].v = tileVerts[i].v;
+        }
+    }
+
+    // Flip up/down
+    if (oldFlags & 8) {
+        tileVerts[0].u = uvs[1].u; tileVerts[0].v = uvs[1].v;
+        tileVerts[1].u = uvs[0].u; tileVerts[1].v = uvs[0].v;
+        tileVerts[2].u = uvs[3].u; tileVerts[2].v = uvs[3].v;
+        tileVerts[3].u = uvs[2].u; tileVerts[3].v = uvs[2].v;
+        if (oldFlags & 0x10) {
+            for (int i = 0; i < 4; i++) {
+                uvs[i].u = tileVerts[i].u;
+                uvs[i].v = tileVerts[i].v;
+            }
+        }
+    }
+
+    // Flip left/right
+    if (oldFlags & 0x10) {
+        tileVerts[0].u = uvs[3].u; tileVerts[0].v = uvs[3].v;
+        tileVerts[1].u = uvs[2].u; tileVerts[1].v = uvs[2].v;
+        tileVerts[2].u = uvs[1].u; tileVerts[2].v = uvs[1].v;
+        tileVerts[3].u = uvs[0].u; tileVerts[3].v = uvs[0].v;
     }
 
     if (!(flags & 0x2000)) {
@@ -154,7 +185,7 @@ static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s
 
     pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(tileVerts),
                         Bridge_TextureHandle(pTexture),
-                        flags,
+                        oldFlags,
                         static_cast<u32>(diffuseColour));
     return 0;
 }
@@ -219,7 +250,7 @@ static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {
         u8 r = (raw >> 16) & 0xFF;
         u8 g = (raw >> 8) & 0xFF;
         u8 b = raw & 0xFF;
-        u8 a = (i == 0) ? 0 : 255;
+        u8 a = 255;
         // In memory on x86 little-endian: byte 0=R, 1=G, 2=B, 3=A
         pal.colorsRGBA[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
                             (static_cast<u32>(b) << 16) | (static_cast<u32>(a) << 24);
