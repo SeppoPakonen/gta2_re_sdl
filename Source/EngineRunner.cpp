@@ -1,11 +1,29 @@
 #include "EngineRunner.hpp"
 #include "hal/HalContext.hpp"
+#include "hal/VfsFileSystem.hpp"
+#include <cstdlib>
 
 namespace gta2 {
 
 bool EngineRunner::Initialize(int argc, char** argv) {
     (void)argc;
     (void)argv;
+
+    auto& ctx = hal::GetHal();
+    if (ctx.pFileSystem) {
+        ctx.pFileSystem->Shutdown();
+    }
+
+    static hal::VfsFileSystem vfs;
+    vfs.Initialize(".", nullptr);
+    vfs.AddSearchRoot("assets");
+    if (const char* pDataDir = std::getenv("GTA2_DATA_DIR")) {
+        if (*pDataDir) {
+            vfs.AddSearchRoot(pDataDir);
+        }
+    }
+    ctx.pFileSystem = &vfs;
+
     mIsRunning = true;
     mInFrontend = true;
     return true;

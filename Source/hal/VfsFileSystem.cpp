@@ -64,6 +64,29 @@ void VfsFileStream::Close() {
 bool VfsFileSystem::Initialize(const char* baseDir, const char* userPrefDir) {
     mBaseDir = baseDir ? baseDir : ".";
     mUserDir = userPrefDir ? userPrefDir : mBaseDir;
+
+    // Check GTA2_ROOT environment variable
+    const char* gta2Root = std::getenv("GTA2_ROOT");
+    if (gta2Root && *gta2Root) {
+        AddSearchRoot(gta2Root);
+        std::string rootData = std::string(gta2Root) + "/data";
+        AddSearchRoot(rootData.c_str());
+    }
+
+#if !defined(_WIN32)
+    // Check standard Wine default install paths
+    const char* home = std::getenv("HOME");
+    if (home && *home) {
+        std::string wineDefault64 = std::string(home) + "/.wine/drive_c/Program Files (x86)/Rockstar Games/GTA2";
+        std::string wineDefault32 = std::string(home) + "/.wine/drive_c/Program Files/Rockstar Games/GTA2";
+
+        AddSearchRoot(wineDefault64.c_str());
+        AddSearchRoot((wineDefault64 + "/data").c_str());
+        AddSearchRoot(wineDefault32.c_str());
+        AddSearchRoot((wineDefault32 + "/data").c_str());
+    }
+#endif
+
     return true;
 }
 

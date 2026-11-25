@@ -1,11 +1,13 @@
 #include "HalContext.hpp"
 #include "NullMoviePlayer.hpp"
+#include "VfsFileSystem.hpp"
 #include <cstdio>
 
 namespace gta2::hal {
 
 static HalContext sHalInstance;
 static NullMoviePlayer sDefaultMovie;
+static VfsFileSystem sDefaultVfs;
 
 HalContext& GetHal() {
     return sHalInstance;
@@ -15,6 +17,10 @@ bool HalContext::Initialize(const char* backendName) {
     printf("[HAL] Initializing backend: %s\n", backendName ? backendName : "Default");
     if (!pMovie) {
         pMovie = &sDefaultMovie;
+    }
+    if (!pFileSystem) {
+        sDefaultVfs.Initialize(".", ".");
+        pFileSystem = &sDefaultVfs;
     }
     return true;
 }
