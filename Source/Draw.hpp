@@ -62,6 +62,8 @@ EXPORT void __stdcall DrawTexture_5D8470(STexture* pTexture,
 
 EXPORT void __stdcall DrawTextureScaled_495470(STexture* pTexture, Fix16 x_pos, Fix16 y_pos, u8 width, u8 height, Ang16 rotation, s32 alpha_value, u8 alpha_flag);
 
+void DiagnosticUpdateTextEvents();
+
 // 9.6f 0x4539B0, the inlined copy of GetLineSpacingFromFontType_5D7700
 inline s32 __stdcall GetLineSpacingFromFontType_5D7700_inlined(u16 font_type)
 {

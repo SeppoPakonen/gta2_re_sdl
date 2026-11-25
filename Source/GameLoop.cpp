@@ -17,7 +17,14 @@
 #include "registry.hpp"
 #include "KeyboardLayout.hpp"
 #include "PlyDat.hpp"
+#include "Draw.hpp"
+#include "Char_Pool.hpp"
+#include "Car.hpp"
+#include "Ped.hpp"
+#include "Player.hpp"
+#include "rng.hpp"
 #include <cstdlib>
+#include <cstdio>
 
 // Game loop state global definitions.
 DEFINE_GLOBAL(u32, gMatchStartTime_6F5A28, 0x6F5A28);
@@ -33,6 +40,7 @@ DEFINE_GLOBAL(void*, gHInstance_708220, nullptr);
 static bool bInitialized = false;
 
 void InitializeGame_4DA4D0() {
+    min_frame_rate_706C50 = 1;
     KeyboardLayout::create_4D5F50();
     PlyDat::Create_56C2C0();
 
@@ -85,6 +93,10 @@ bool RunGameFrame_4DA850() {
                 gMatchStartTime_6F5A28 = Time;
             }
             if (bInputsPending_6F5760) {
+                const u32 inputs = gInputRecorder_67F8B0.get_input_bits_4CEAC0();
+                if (gGame_0x40_67E008 && gGame_0x40_67E008->field_38_local_player) {
+                    gGame_0x40_67E008->field_38_local_player->SetInputs_565740(inputs);
+                }
                 bInputsPending_6F5760 = false;
             }
             exit_requested = gGame_0x40_67E008->ExecuteGame_4B9640();
@@ -98,6 +110,10 @@ bool RunGameFrame_4DA850() {
             gFramesSinceDraw_6F58D8 = 0;
             drew_frame = true;
         } else if (bInputsPending_6F5760) {
+            const u32 inputs = gInputRecorder_67F8B0.get_input_bits_4CEAC0();
+            if (gGame_0x40_67E008 && gGame_0x40_67E008->field_38_local_player) {
+                gGame_0x40_67E008->field_38_local_player->SetInputs_565740(inputs);
+            }
             bInputsPending_6F5760 = false;
         }
     }
@@ -106,6 +122,7 @@ bool RunGameFrame_4DA850() {
 
 void Draw_4DA7B0() {
     gGame_0x40_67E008->Draw_4B92D0();
+    DiagnosticUpdateTextEvents();
     pVid_FlipBuffers(gVidSys_7071D0);
     if (bSkip_lid_67D546 || bSkip_top_67D574 || bSkip_bottom_67D4E7
         || bSkip_left_67D6BF || bSkip_right_67D4E4) {
@@ -149,6 +166,40 @@ bool GameLoop_StepFrame() {
 
     static int sFrameCount = 0;
     sFrameCount++;
+
+    // Periodic simulation diagnostics (player pos, health, RNG cycle, entity counts)
+    if (sFrameCount % 60 == 0) {
+        if (gGame_0x40_67E008 && gGame_0x40_67E008->field_38_local_player) {
+            Player* pPlayer = gGame_0x40_67E008->field_38_local_player;
+            Ped* pPed = pPlayer->GetPlayerPed_41D020();
+            if (pPed) {
+                float px = 0.0f, py = 0.0f, pz = 0.0f;
+                if (pPed->field_168_game_object && pPed->field_168_game_object->field_80_sprite_ptr) {
+                    px = pPed->field_168_game_object->field_80_sprite_ptr->field_14_xy.x.ToFloat();
+                    py = pPed->field_168_game_object->field_80_sprite_ptr->field_14_xy.y.ToFloat();
+                    pz = pPed->field_168_game_object->field_80_sprite_ptr->field_1C_zpos.ToFloat();
+                } else {
+                    px = pPed->field_1AC_cam.x.ToFloat();
+                    py = pPed->field_1AC_cam.y.ToFloat();
+                    pz = pPed->field_1AC_cam.z.ToFloat();
+                }
+                const s32 health = pPed->get_health_433B70();
+                const u32 rng = gpRng_67AB34 ? gpRng_67AB34->get_cur_rng_41CFE0() : 0;
+                std::printf("[DIAG-PLAYER] Frame %d: pos=(%.2f, %.2f, %.2f) health=%d rng=%u\n",
+                            sFrameCount, px, py, pz, health, rng);
+            }
+        }
+        if (gPedManager_6787BC || gCarManager_6C_677930) {
+            int pedsOnScreen = gPedManager_6787BC ? gPedManager_6787BC->field_6_num_peds_on_screen : 0;
+            int pedsUpdated = gPedManager_6787BC ? gPedManager_6787BC->field_3_num_peds_updated : 0;
+            int pedsDummy = gPedManager_6787BC ? gPedManager_6787BC->field_2_num_dummy_chars : 0;
+            int carsVisible = gCarManager_6C_677930 ? gCarManager_6C_677930->field_55_visible_cars_count : 0;
+            int carsRecycled = gCarManager_6C_677930 ? gCarManager_6C_677930->field_28_recycled_cars : 0;
+            std::printf("[DIAG-ENTITIES] Frame %d: peds(on_screen=%d, updated=%d, dummy=%d), cars(visible=%d, recycled=%d)\n",
+                        sFrameCount, pedsOnScreen, pedsUpdated, pedsDummy, carsVisible, carsRecycled);
+        }
+        std::fflush(stdout);
+    }
 
     const char* pMaxFramesEnv = std::getenv("GTA2_DEMO_FRAMES");
     const int maxFrames = pMaxFramesEnv ? std::atoi(pMaxFramesEnv) : 0;

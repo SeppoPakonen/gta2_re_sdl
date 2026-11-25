@@ -23,11 +23,12 @@ public:
 
     // Texture Management
     virtual TextureHandle RegisterTexture(const TextureDesc& desc) = 0;
-    virtual void UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette) = 0;
+    virtual void UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette,
+                               const u32* pPaletteRGBA = nullptr, u16 width = 0, u16 height = 0) = 0;
     virtual void UnregisterTexture(TextureHandle handle) = 0;
 
     // Palette & Gamma
-    virtual void SetPalette(TextureHandle texture, const u16* pPalette) = 0;
+    virtual void SetPalette(TextureHandle texture, const u16* pPalette, const u32* pPaletteRGBA = nullptr) = 0;
     virtual void SetGamma(f32 gamma) = 0;
 
     virtual bool CaptureScreenshot(const char* ppmPath) { (void)ppmPath; return false; }

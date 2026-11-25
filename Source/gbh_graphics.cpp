@@ -82,37 +82,100 @@ static gta2::hal::TextureHandle Bridge_TextureHandle(STexture* pTexture) {
 
 static void Bridge_gbh_DrawQuad(s32 flags, STexture* pTexture, Vert* pVerts, s32 baseColour) {
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
-    if (!pRenderer) return;
-    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pVerts),
+    if (!pRenderer || !pVerts) return;
+    Vert quadVerts[4];
+    std::memcpy(quadVerts, pVerts, 4 * sizeof(Vert));
+    if (!(flags & 0x2000)) {
+        u8 c = static_cast<u8>(baseColour);
+        u32 diff = 0xFF000000 | (c << 16) | (c << 8) | c;
+        for (int i = 0; i < 4; ++i) {
+            quadVerts[i].diff = diff;
+        }
+    }
+    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(quadVerts),
                         Bridge_TextureHandle(pTexture),
                         static_cast<u32>(flags),
                         static_cast<u32>(baseColour));
 }
 
-static s32 Bridge_gbh_DrawTile(u32 flags, STexture* pTexture, Vert* pData, u8 diffuseColour) {
+static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s32 diffuseColour) {
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
-    if (!pRenderer) return 0;
-    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pData),
+    if (!pRenderer || !pData) return 0;
+
+    Vert tileVerts[4];
+    std::memcpy(tileVerts, pData, 4 * sizeof(Vert));
+
+    if (!(flags & 0x4000)) {
+        tileVerts[0].u = 0.5f;
+        tileVerts[0].v = 0.5f;
+        tileVerts[1].u = 63.4999f;
+        tileVerts[1].v = 0.5f;
+        tileVerts[2].u = 63.4999f;
+        tileVerts[2].v = 63.4999f;
+        tileVerts[3].u = 0.5f;
+        tileVerts[3].v = 63.4999f;
+    }
+
+    struct UV { float u, v; };
+    UV uvs[4];
+    for (int i = 0; i < 4; i++) {
+        uvs[i].u = tileVerts[i].u;
+        uvs[i].v = tileVerts[i].v;
+    }
+
+    switch (flags & 0x60) {
+        case 0x20:
+            tileVerts[0].u = uvs[3].u; tileVerts[0].v = uvs[3].v;
+            tileVerts[1].u = uvs[0].u; tileVerts[1].v = uvs[0].v;
+            tileVerts[2].u = uvs[1].u; tileVerts[2].v = uvs[1].v;
+            tileVerts[3].u = uvs[2].u; tileVerts[3].v = uvs[2].v;
+            break;
+        case 0x40:
+            tileVerts[0].u = uvs[2].u; tileVerts[0].v = uvs[2].v;
+            tileVerts[1].u = uvs[3].u; tileVerts[1].v = uvs[3].v;
+            tileVerts[2].u = uvs[0].u; tileVerts[2].v = uvs[0].v;
+            tileVerts[3].u = uvs[1].u; tileVerts[3].v = uvs[1].v;
+            break;
+        case 0x60:
+            tileVerts[0].u = uvs[1].u; tileVerts[0].v = uvs[1].v;
+            tileVerts[1].u = uvs[2].u; tileVerts[1].v = uvs[2].v;
+            tileVerts[2].u = uvs[3].u; tileVerts[2].v = uvs[3].v;
+            tileVerts[3].u = uvs[0].u; tileVerts[3].v = uvs[0].v;
+            break;
+    }
+
+    if (!(flags & 0x2000)) {
+        u8 c = static_cast<u8>(diffuseColour);
+        u32 diff = 0xFF000000 | (c << 16) | (c << 8) | c;
+        for (int i = 0; i < 4; ++i) {
+            tileVerts[i].diff = diff;
+        }
+    }
+
+    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(tileVerts),
                         Bridge_TextureHandle(pTexture),
                         flags,
                         static_cast<u32>(diffuseColour));
     return 0;
 }
 
-static s32 Bridge_gbh_DrawTilePart(u32 flags, STexture* pTexture, Vert* pData, s32 diffuseColour) {
-    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
-    if (!pRenderer) return 0;
-    pRenderer->DrawQuad(reinterpret_cast<const gta2::hal::HalVertex*>(pData),
-                        Bridge_TextureHandle(pTexture),
-                        flags,
-                        static_cast<u32>(diffuseColour));
-    return 0;
+static s32 Bridge_gbh_DrawTile(u32 flags, STexture* pTexture, Vert* pData, u8 diffuseColour) {
+    return Bridge_gbh_DrawTilePart(flags, pTexture, pData, diffuseColour);
 }
 
 static void Bridge_gbh_DrawTriangle(s32 triFlags, STexture* pTexture, Vert* pVerts, u8 diffuseColour) {
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
-    if (!pRenderer) return;
-    pRenderer->DrawTriangle(reinterpret_cast<const gta2::hal::HalVertex*>(pVerts),
+    if (!pRenderer || !pVerts) return;
+    Vert triVerts[3];
+    std::memcpy(triVerts, pVerts, 3 * sizeof(Vert));
+    if (!(triFlags & 0x2000)) {
+        u8 c = diffuseColour;
+        u32 diff = 0xFF000000 | (c << 16) | (c << 8) | c;
+        for (int i = 0; i < 3; ++i) {
+            triVerts[i].diff = diff;
+        }
+    }
+    pRenderer->DrawTriangle(reinterpret_cast<const gta2::hal::HalVertex*>(triVerts),
                             Bridge_TextureHandle(pTexture),
                             static_cast<u32>(triFlags),
                             static_cast<u32>(diffuseColour));
@@ -136,6 +199,53 @@ static void Bridge_gbh_SetWindow(float left, float top, float right, float botto
     }
 }
 
+struct BridgePalette {
+    u16 colors565[256];
+    u32 colorsRGBA[256];
+    bool loaded = false;
+};
+
+static std::vector<BridgePalette> sBridgePalettes;
+
+static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {
+    if (palId < 0 || !pData) return 0;
+    if (static_cast<size_t>(palId) >= sBridgePalettes.size()) {
+        sBridgePalettes.resize(palId + 64);
+    }
+    BridgePalette& pal = sBridgePalettes[palId];
+    pal.loaded = true;
+    for (int i = 0; i < 256; ++i) {
+        DWORD raw = pData[i * 64];
+        u8 r = (raw >> 16) & 0xFF;
+        u8 g = (raw >> 8) & 0xFF;
+        u8 b = raw & 0xFF;
+        u8 a = (i == 0) ? 0 : 255;
+        // In memory on x86 little-endian: byte 0=R, 1=G, 2=B, 3=A
+        pal.colorsRGBA[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                            (static_cast<u32>(b) << 16) | (static_cast<u32>(a) << 24);
+        u16 r5 = (r * 31) / 255;
+        u16 g6 = (g * 63) / 255;
+        u16 b5 = (b * 31) / 255;
+        pal.colors565[i] = (r5 << 11) | (g6 << 5) | b5;
+    }
+    return static_cast<u32>(palId);
+}
+
+static const BridgePalette* GetOrRegisterPalette(s32 palId) {
+    if (palId < 0) return nullptr;
+    if (static_cast<size_t>(palId) < sBridgePalettes.size() && sBridgePalettes[palId].loaded) {
+        return &sBridgePalettes[palId];
+    }
+    if (gGtx_0x106C_703DD4) {
+        DWORD* pData = reinterpret_cast<DWORD*>(gGtx_0x106C_703DD4->GetPalData_5AA6A0(static_cast<u16>(palId)));
+        if (pData) {
+            Bridge_gbh_RegisterPalette(palId, pData);
+            return &sBridgePalettes[palId];
+        }
+    }
+    return nullptr;
+}
+
 static STexture* Bridge_gbh_RegisterTexture(s32 width, s32 height, BYTE* pData, s32 pal_idx, char_type flag) {
     STexture* tex = new STexture();
     std::memset(tex, 0, sizeof(STexture));
@@ -143,6 +253,11 @@ static STexture* Bridge_gbh_RegisterTexture(s32 width, s32 height, BYTE* pData, 
     tex->field_10_height = static_cast<u16>(height);
     tex->field_14_original_pixel_data_ptr = pData;
     tex->field_4_pal_is_trans = static_cast<u16>(flag);
+    const BridgePalette* pal = (pal_idx >= 0) ? GetOrRegisterPalette(pal_idx) : nullptr;
+    if (pal) {
+        tex->field_18_pPaltData = const_cast<u16*>(pal->colors565);
+        tex->field_12_bPalIsValid = 1;
+    }
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
     if (pRenderer) {
         gta2::hal::TextureDesc desc{};
@@ -150,11 +265,8 @@ static STexture* Bridge_gbh_RegisterTexture(s32 width, s32 height, BYTE* pData, 
         desc.height = static_cast<gta2::hal::u16>(height);
         desc.bitsPerPixel = 8;
         desc.pPixels = pData;
-        if (gGtx_0x106C_703DD4 && pal_idx >= 0) {
-            desc.pPalette = reinterpret_cast<const u16*>(gGtx_0x106C_703DD4->GetPalData_5AA6A0(static_cast<u16>(pal_idx)));
-        } else {
-            desc.pPalette = nullptr;
-        }
+        desc.pPalette = pal ? pal->colors565 : nullptr;
+        desc.pPaletteRGBA = pal ? pal->colorsRGBA : nullptr;
         desc.bTransparent = (flag != 0);
         gta2::hal::TextureHandle h = pRenderer->RegisterTexture(desc);
         tex->field_0_id = static_cast<u16>(h);
@@ -187,7 +299,18 @@ static STexture* Bridge_gbh_UnlockTexture(STexture* pTexture) {
         gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
         gta2::hal::TextureHandle h = Bridge_TextureHandle(pTexture);
         if (pRenderer && h != gta2::hal::kInvalidTextureHandle && pTexture->field_14_original_pixel_data_ptr) {
-            pRenderer->UpdateTexture(h, pTexture->field_14_original_pixel_data_ptr, nullptr);
+            const u32* pPalRGBA = nullptr;
+            if (pTexture->field_18_pPaltData) {
+                for (const auto& pal : sBridgePalettes) {
+                    if (pal.colors565 == pTexture->field_18_pPaltData) {
+                        pPalRGBA = pal.colorsRGBA;
+                        break;
+                    }
+                }
+            }
+            pRenderer->UpdateTexture(h, pTexture->field_14_original_pixel_data_ptr,
+                                    pTexture->field_18_pPaltData, pPalRGBA,
+                                    pTexture->field_E_width, pTexture->field_10_height);
         }
     }
     return pTexture;
@@ -196,10 +319,13 @@ static STexture* Bridge_gbh_UnlockTexture(STexture* pTexture) {
 static void Bridge_gbh_AssignPalette(STexture* pTexture, s32 palId) {
     if (pTexture) {
         pTexture->field_12_bPalIsValid = 1;
-        gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
-        if (pRenderer && gGtx_0x106C_703DD4 && palId >= 0) {
-            const u16* pPal = reinterpret_cast<const u16*>(gGtx_0x106C_703DD4->GetPalData_5AA6A0(static_cast<u16>(palId)));
-            pRenderer->SetPalette(Bridge_TextureHandle(pTexture), pPal);
+        const BridgePalette* pal = GetOrRegisterPalette(palId);
+        if (pal) {
+            pTexture->field_18_pPaltData = const_cast<u16*>(pal->colors565);
+            gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+            if (pRenderer) {
+                pRenderer->SetPalette(Bridge_TextureHandle(pTexture), pal->colors565, pal->colorsRGBA);
+            }
         }
     }
 }
@@ -220,6 +346,8 @@ void GBH_GraphicsInit_Modern() {
     pgbh_UnlockTexture   = Bridge_gbh_UnlockTexture;
     pgbh_AssignPalette   = Bridge_gbh_AssignPalette;
 
+    pgbh_RegisterPalette = reinterpret_cast<T_gbh_RegisterPalette>(Bridge_gbh_RegisterPalette);
+    pgbh_FreePalette      = reinterpret_cast<T_gbh_FreePalette>(Dummy_NoOp);
     pgbh_InitDLL          = reinterpret_cast<T_gbh_InitDLL>(Dummy_Zero);
     pgbh_Init             = reinterpret_cast<T_gbh_Init>(Dummy_Zero);
     pgbh_CloseDLL         = reinterpret_cast<T_gbh_CloseDLL>(Dummy_NoOp);

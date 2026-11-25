@@ -9,24 +9,16 @@
 
 namespace gta2::hal {
 
-// Convert a 16-bit GTA2 colour (RGB 565 or ARGB 1555) to 32-bit ARGB8888.
-inline u32 Convert16BitTo32Bit(u16 color16, bool hasAlphaBit) {
-    u8 r, g, b, a;
-    if (hasAlphaBit) {
-        // ARGB 1555
-        a = (color16 & 0x8000) ? 0xFF : 0x00;
-        r = static_cast<u8>(((color16 >> 10) & 0x1F) * 255 / 31);
-        g = static_cast<u8>(((color16 >> 5) & 0x1F) * 255 / 31);
-        b = static_cast<u8>((color16 & 0x1F) * 255 / 31);
-    } else {
-        // RGB 565
-        a = 0xFF;
-        r = static_cast<u8>(((color16 >> 11) & 0x1F) * 255 / 31);
-        g = static_cast<u8>(((color16 >> 5) & 0x3F) * 255 / 63);
-        b = static_cast<u8>((color16 & 0x1F) * 255 / 31);
-    }
-    return (static_cast<u32>(a) << 24) | (static_cast<u32>(r) << 16) |
-           (static_cast<u32>(g) << 8) | static_cast<u32>(b);
+// Convert a 16-bit GTA2 RGB565 colour to 32-bit RGBA (in memory: R, G, B, A).
+inline u32 Convert16BitTo32Bit(u16 color16, bool /*hasAlphaBit*/) {
+    // RGB 565
+    const u8 a = 0xFF;
+    const u8 r = static_cast<u8>(((color16 >> 11) & 0x1F) * 255 / 31);
+    const u8 g = static_cast<u8>(((color16 >> 5) & 0x3F) * 255 / 63);
+    const u8 b = static_cast<u8>((color16 & 0x1F) * 255 / 31);
+    // On x86 little-endian, byte 0 is R, byte 1 is G, byte 2 is B, byte 3 is A
+    return (static_cast<u32>(a) << 24) | (static_cast<u32>(b) << 16) |
+           (static_cast<u32>(g) << 8) | static_cast<u32>(r);
 }
 
 // Expand an 8-bit paletted image to 32-bit RGBA. Index 0 is treated as the
@@ -38,7 +30,7 @@ inline void Expand8BitTo32Bit(const u8* pSrcPixels, const u16* pPalette, u32* pD
         if (index == 0 && hasAlpha) {
             pDstPixels[i] = 0x00000000; // Transparent key
         } else {
-            pDstPixels[i] = Convert16BitTo32Bit(pPalette[index], hasAlpha);
+            pDstPixels[i] = Convert16BitTo32Bit(pPalette[index], false);
         }
     }
 }

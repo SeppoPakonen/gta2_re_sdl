@@ -7,6 +7,50 @@
 #include "gtx_0x106C.hpp"
 #include "KanjiFont.hpp"
 #include "TextureCache.hpp"
+#include <unordered_set>
+#include <string>
+#include <cstdio>
+
+static std::unordered_set<std::string> sFrameTexts;
+static std::unordered_set<std::string> sLastFrameTexts;
+
+static std::string WCharToUtf8(const wchar_t* wstr) {
+    if (!wstr) return "";
+    std::string s;
+    while (*wstr) {
+        wchar_t c = *wstr++;
+        if (c < 0x80) {
+            s.push_back(static_cast<char>(c));
+        } else {
+            s.push_back('?');
+        }
+    }
+    return s;
+}
+
+static void DiagnosticRecordText(const wchar_t* pText, Fix16 /*x*/, Fix16 /*y*/) {
+    std::string s = WCharToUtf8(pText);
+    if (!s.empty()) {
+        sFrameTexts.insert(s);
+    }
+}
+
+void DiagnosticUpdateTextEvents() {
+    for (const auto& s : sFrameTexts) {
+        if (sLastFrameTexts.find(s) == sLastFrameTexts.end()) {
+            std::printf("[DIAG-TEXT-SHOW] \"%s\"\n", s.c_str());
+            std::fflush(stdout);
+        }
+    }
+    for (const auto& s : sLastFrameTexts) {
+        if (sFrameTexts.find(s) == sFrameTexts.end()) {
+            std::printf("[DIAG-TEXT-HIDE] \"%s\"\n", s.c_str());
+            std::fflush(stdout);
+        }
+    }
+    sLastFrameTexts = std::move(sFrameTexts);
+    sFrameTexts.clear();
+}
 
 // gbh_DrawQuad flags, named as in GTA2Hax's d3ddll
 namespace quad_flag
@@ -368,6 +412,7 @@ void __stdcall DrawText_5D8A10(const wchar_t* pText,
                                s32 alpha_value,
                                u8 flags)
 {
+    DiagnosticRecordText(pText, xpos_fp, ypos_fp);
     s32 quad_flags = CalcQuadFlags_5D83E0(alpha_value, flags) | quad_flag::texture_filtering;
 
     // The original walks a copy of pText (it reuses pText's stack slot as a float temp)

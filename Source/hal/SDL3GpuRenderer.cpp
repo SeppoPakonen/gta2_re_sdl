@@ -336,7 +336,8 @@ TextureHandle SDL3GpuRenderer::RegisterTexture(const TextureDesc& desc) {
     return handle;
 }
 
-void SDL3GpuRenderer::UpdateTexture(TextureHandle handle, const void* /*pPixels*/, const u16* /*pPalette*/) {
+void SDL3GpuRenderer::UpdateTexture(TextureHandle handle, const void* /*pPixels*/, const u16* /*pPalette*/,
+                                    const u32* /*pPaletteRGBA*/, u16 /*width*/, u16 /*height*/) {
     // Full re-upload path goes through RegisterTexture; partial updates are not
     // tracked by this renderer yet.
     (void)handle;
@@ -349,7 +350,7 @@ void SDL3GpuRenderer::UnregisterTexture(TextureHandle handle) {
     g_state.textures.erase(it);
 }
 
-void SDL3GpuRenderer::SetPalette(TextureHandle /*texture*/, const u16* /*pPalette*/) {
+void SDL3GpuRenderer::SetPalette(TextureHandle /*texture*/, const u16* /*pPalette*/, const u32* /*pPaletteRGBA*/) {
     // Palettes are expanded to RGBA at RegisterTexture time.
 }
 

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstddef>
 #include <cstdio>
+#include <cmath>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -130,7 +131,7 @@ const char* const kVertexShaderSrc =
     "varying vec2 v_texCoord;\n"
     "void main() {\n"
     "    gl_Position = u_projMatrix * vec4(a_position.xy, 0.0, 1.0);\n"
-    "    v_color = a_color;\n"
+    "    v_color = a_color.bgra;\n"
     "    v_texCoord = a_texCoord;\n"
     "}\n";
 
@@ -360,6 +361,49 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
 
     auto it = mTextures.find(texture);
     const bool hasTexture = (it != mTextures.end());
+
+    // Diagnostic: check for non-finite / warped vertex coordinates
+    bool hasNonFinite = false;
+    float minX = 1e9f, maxX = -1e9f, minY = 1e9f, maxY = -1e9f;
+    for (int i = 0; i < count; ++i) {
+        if (!std::isfinite(verts[i].x) || !std::isfinite(verts[i].y) || !std::isfinite(verts[i].z)) {
+            hasNonFinite = true;
+        }
+        if (verts[i].x < minX) minX = verts[i].x;
+        if (verts[i].x > maxX) maxX = verts[i].x;
+        if (verts[i].y < minY) minY = verts[i].y;
+        if (verts[i].y > maxY) maxY = verts[i].y;
+    }
+    if (hasNonFinite) {
+        static int sWarpCount = 0;
+        if (++sWarpCount <= 10) {
+            std::printf("[DIAG-3D] Warning: non-finite vertex detected in primitive!\n");
+            std::fflush(stdout);
+        }
+    }
+
+    // Periodic bounds reporting (every 300 primitive batches)
+    static int sBatchCounter = 0;
+    if (++sBatchCounter % 300 == 0 && mWindow) {
+        s32 winW = 640, winH = 480;
+        mWindow->GetWindowSize(winW, winH);
+        const bool inside = (maxX >= 0 && minX <= winW && maxY >= 0 && minY <= winH);
+        std::printf("[DIAG-3D] Bounds: X=[%.1f, %.1f], Y=[%.1f, %.1f] insideWindow=%s (%dx%d)\n",
+                    minX, maxX, minY, maxY, inside ? "YES" : "NO", winW, winH);
+        std::fflush(stdout);
+    }
+
+    // Normalize texture coordinates from pixel space [0, texW]x[0, texH] to [0.0, 1.0]
+    std::vector<HalVertex> normVerts(verts, verts + count);
+    if (hasTexture && it->second.width > 0 && it->second.height > 0) {
+        const float invW = 1.0f / static_cast<float>(it->second.width);
+        const float invH = 1.0f / static_cast<float>(it->second.height);
+        for (int i = 0; i < count; ++i) {
+            normVerts[i].u *= invW;
+            normVerts[i].v *= invH;
+        }
+    }
+
     if (mUseTextureUniform >= 0) {
         g_gl.glUniform1i(mUseTextureUniform, hasTexture ? 1 : 0);
     }
@@ -379,7 +423,7 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
     g_gl.glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     g_gl.glBufferData(GL_ARRAY_BUFFER,
                       static_cast<GLsizeiptr>(count) * static_cast<GLsizeiptr>(sizeof(HalVertex)),
-                      verts, GL_DYNAMIC_DRAW);
+                      normVerts.data(), GL_DYNAMIC_DRAW);
 
     const GLsizei stride = static_cast<GLsizei>(sizeof(HalVertex));
     g_gl.glEnableVertexAttribArray(static_cast<GLuint>(mPositionAttrib));
@@ -403,6 +447,37 @@ void OpenGLRenderer::DrawTriangle(const HalVertex* verts, TextureHandle texture,
     DrawPrimitive(verts, 3, GL_TRIANGLES, texture, flags);
 }
 
+static void CheckTextureDiagnostics(TextureHandle handle, u16 width, u16 height, u8 bpp, const void* pixels, size_t pixelCount, const char* op) {
+    if (width == 0 || height == 0) {
+        std::printf("[DIAG-TEX] %s: Empty texture handle=%u (0x0)\n", op, handle);
+        std::fflush(stdout);
+        return;
+    }
+    if (!pixels) {
+        std::printf("[DIAG-TEX] %s: NULL pixels handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
+        std::fflush(stdout);
+        return;
+    }
+    size_t nonZeroCount = 0;
+    const u32* p32 = static_cast<const u32*>(pixels);
+    for (size_t i = 0; i < pixelCount; ++i) {
+        if (p32[i] != 0) {
+            nonZeroCount++;
+        }
+    }
+    if (nonZeroCount == 0) {
+        std::printf("[DIAG-TEX] %s: All-black texture handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
+        std::fflush(stdout);
+    } else {
+        static int sLoadedLogCount = 0;
+        if (sLoadedLogCount < 30) {
+            sLoadedLogCount++;
+            std::printf("[DIAG-TEX] %s: handle=%u (%dx%d, bpp=%d, nonZero=%zu/%zu)\n", op, handle, width, height, bpp, nonZeroCount, pixelCount);
+            std::fflush(stdout);
+        }
+    }
+}
+
 TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     if (!mReady) {
         return kInvalidTextureHandle;
@@ -422,7 +497,13 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     if (desc.pPixels && desc.bitsPerPixel == 8) {
         const size_t pixelCount = static_cast<size_t>(desc.width) * desc.height;
         rgbaBuffer.resize(pixelCount);
-        if (desc.pPalette) {
+        if (desc.pPaletteRGBA) {
+            const u8* src = static_cast<const u8*>(desc.pPixels);
+            for (size_t i = 0; i < pixelCount; ++i) {
+                u8 val = src[i];
+                rgbaBuffer[i] = (val == 0 && desc.bTransparent) ? 0 : desc.pPaletteRGBA[val];
+            }
+        } else if (desc.pPalette) {
             Expand8BitTo32Bit(static_cast<const u8*>(desc.pPixels), desc.pPalette,
                              rgbaBuffer.data(), pixelCount, desc.bTransparent);
         } else {
@@ -447,12 +528,18 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     info.bitsPerPixel = desc.bitsPerPixel;
     info.bTransparent = desc.bTransparent;
     info.pPalette = desc.pPalette;
+    info.pPaletteRGBA = desc.pPaletteRGBA;
     info.pPixels = desc.pPixels;
     mTextures[handle] = info;
+
+    const size_t totalPixels = static_cast<size_t>(desc.width) * desc.height;
+    CheckTextureDiagnostics(handle, desc.width, desc.height, desc.bitsPerPixel, uploadPixels, totalPixels, "Register");
+
     return handle;
 }
 
-void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette) {
+void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette,
+                                   const u32* pPaletteRGBA, u16 width, u16 height) {
     if (!mReady) {
         return;
     }
@@ -461,11 +548,16 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
         return;
     }
     TexInfo& info = it->second;
+    if (width > 0) info.width = width;
+    if (height > 0) info.height = height;
     if (pPixels) {
         info.pPixels = pPixels;
     }
     if (pPalette) {
         info.pPalette = pPalette;
+    }
+    if (pPaletteRGBA) {
+        info.pPaletteRGBA = pPaletteRGBA;
     }
     g_gl.glBindTexture(GL_TEXTURE_2D, info.glId);
     g_gl.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -475,7 +567,13 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     if (info.pPixels && info.bitsPerPixel == 8) {
         const size_t pixelCount = static_cast<size_t>(info.width) * info.height;
         rgbaBuffer.resize(pixelCount);
-        if (info.pPalette) {
+        if (info.pPaletteRGBA) {
+            const u8* src = static_cast<const u8*>(info.pPixels);
+            for (size_t i = 0; i < pixelCount; ++i) {
+                u8 val = src[i];
+                rgbaBuffer[i] = (val == 0 && info.bTransparent) ? 0 : info.pPaletteRGBA[val];
+            }
+        } else if (info.pPalette) {
             Expand8BitTo32Bit(static_cast<const u8*>(info.pPixels), info.pPalette,
                              rgbaBuffer.data(), pixelCount, info.bTransparent);
         } else {
@@ -491,6 +589,9 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                       static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
+
+    const size_t totalPixels = static_cast<size_t>(info.width) * info.height;
+    CheckTextureDiagnostics(handle, info.width, info.height, info.bitsPerPixel, uploadPixels, totalPixels, "Update");
 }
 
 void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {
@@ -505,15 +606,15 @@ void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {
     mTextures.erase(it);
 }
 
-void OpenGLRenderer::SetPalette(TextureHandle texture, const u16* pPalette) {
-    if (!mReady || !pPalette) {
+void OpenGLRenderer::SetPalette(TextureHandle texture, const u16* pPalette, const u32* pPaletteRGBA) {
+    if (!mReady) {
         return;
     }
     auto it = mTextures.find(texture);
     if (it == mTextures.end()) {
         return;
     }
-    UpdateTexture(texture, it->second.pPixels, pPalette);
+    UpdateTexture(texture, it->second.pPixels, pPalette, pPaletteRGBA);
 }
 
 void OpenGLRenderer::SetGamma(f32 gamma) {

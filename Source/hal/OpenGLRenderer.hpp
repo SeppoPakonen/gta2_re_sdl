@@ -26,10 +26,11 @@ public:
     void DrawQuad(const HalVertex* verts, TextureHandle texture, u32 flags, u32 diffuseColor) override;
 
     TextureHandle RegisterTexture(const TextureDesc& desc) override;
-    void UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette) override;
+    void UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette,
+                       const u32* pPaletteRGBA = nullptr, u16 width = 0, u16 height = 0) override;
     void UnregisterTexture(TextureHandle handle) override;
 
-    void SetPalette(TextureHandle texture, const u16* pPalette) override;
+    void SetPalette(TextureHandle texture, const u16* pPalette, const u32* pPaletteRGBA = nullptr) override;
     void SetGamma(f32 gamma) override;
 
     bool CaptureScreenshot(const char* ppmPath) override;
@@ -62,6 +63,7 @@ private:
         u8 bitsPerPixel = 0;
         bool bTransparent = false;
         const u16* pPalette = nullptr;
+        const u32* pPaletteRGBA = nullptr;
         const void* pPixels = nullptr;
     };
     std::unordered_map<TextureHandle, TexInfo> mTextures;

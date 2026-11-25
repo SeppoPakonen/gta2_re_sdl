@@ -38,7 +38,8 @@ struct TextureDesc {
     u16 height;
     u8  bitsPerPixel;   // 8 (paletted) or 16 (RGB565 / ARGB1555) or 32 (RGBA8888)
     const void* pPixels;
-    const u16* pPalette; // 256-entry 16-bit palette for 8-bit textures
+    const u16* pPalette;     // 256-entry 16-bit RGB565 palette for 8-bit textures
+    const u32* pPaletteRGBA; // 256-entry 32-bit RGBA palette
     bool bTransparent;
 };
 
