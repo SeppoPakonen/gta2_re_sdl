@@ -30,6 +30,10 @@ bool SDLAudioBackend::Initialize(s32 sampleRate, s32 channels, s32 bufferSize) {
     // SDL3 initialization path omitted (guarded out by GTA2_USE_SDL3)
     return false;
 #else
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
+        return false;
+    }
+
     SDL_AudioSpec spec{};
     spec.freq = sampleRate;
     spec.format = AUDIO_S16SYS;
@@ -63,6 +67,7 @@ void SDLAudioBackend::Shutdown() {
         SDL_CloseAudioDevice(mAudioDevice);
         mAudioDevice = 0;
     }
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 
     {

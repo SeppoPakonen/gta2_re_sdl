@@ -146,10 +146,16 @@ const char* const kFragmentShaderSrc =
     "varying vec2 v_texCoord;\n"
     "uniform sampler2D u_texture;\n"
     "uniform int u_useTexture;\n"
+    "uniform int u_blendMode;\n"
     "void main() {\n"
     "    vec4 texColor = (u_useTexture != 0) ? texture2D(u_texture, v_texCoord) : vec4(1.0);\n"
-    "    vec4 finalColor = texColor * v_color;\n"
-    "    if (finalColor.a < 0.05) discard;\n"
+    "    vec4 finalColor;\n"
+    "    if (u_blendMode == 0) {\n"
+    "        finalColor = vec4(texColor.rgb, 1.0) * v_color;\n"
+    "    } else {\n"
+    "        finalColor = texColor * v_color;\n"
+    "        if (finalColor.a < 0.05) discard;\n"
+    "    }\n"
     "    gl_FragColor = finalColor;\n"
     "}\n";
 
@@ -273,6 +279,7 @@ bool OpenGLRenderer::Initialize(IWindowSystem* pWindow) {
     mProjUniform = g_gl.glGetUniformLocation(mProgram, "u_projMatrix");
     mTextureUniform = g_gl.glGetUniformLocation(mProgram, "u_texture");
     mUseTextureUniform = g_gl.glGetUniformLocation(mProgram, "u_useTexture");
+    mBlendModeUniform = g_gl.glGetUniformLocation(mProgram, "u_blendMode");
 
     g_gl.glGenBuffers(1, &mVbo);
 
@@ -308,8 +315,24 @@ void OpenGLRenderer::SetViewport(s32 x, s32 y, s32 width, s32 height) {
     if (!mReady) {
         return;
     }
-    g_gl.glViewport(static_cast<GLint>(x), static_cast<GLint>(y),
-                    static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+    s32 winW = 640, winH = 480;
+    if (mWindow) {
+        mWindow->GetWindowSize(winW, winH);
+    }
+    if (winW <= 0) winW = 1;
+    if (winH <= 0) winH = 1;
+
+    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
+    if (scale <= 0.0f) scale = 1.0f;
+    GLint baseVpX = (winW - static_cast<GLint>(640.0f * scale)) / 2;
+    GLint baseVpY = (winH - static_cast<GLint>(480.0f * scale)) / 2;
+
+    GLint vpX = baseVpX + static_cast<GLint>(static_cast<float>(x) * scale);
+    GLint vpY = baseVpY + static_cast<GLint>(static_cast<float>(480 - (y + height)) * scale);
+    GLsizei vpW = static_cast<GLsizei>(static_cast<float>(width) * scale);
+    GLsizei vpH = static_cast<GLsizei>(static_cast<float>(height) * scale);
+
+    g_gl.glViewport(vpX, vpY, vpW, vpH);
 }
 
 void OpenGLRenderer::BeginScene() {
@@ -317,17 +340,27 @@ void OpenGLRenderer::BeginScene() {
         return;
     }
     g_gl.glUseProgram(mProgram);
-    g_gl.glEnable(GL_BLEND);
-    g_gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Orthographic projection mapping pixel space [0,w]x[0,h] to clip space.
-    if (mWindow && mProjUniform >= 0) {
-        s32 w = 0, h = 0;
-        mWindow->GetWindowSize(w, h);
-        if (w <= 0) w = 1;
-        if (h <= 0) h = 1;
-        const GLfloat sx = 2.0f / static_cast<GLfloat>(w);
-        const GLfloat sy = -2.0f / static_cast<GLfloat>(h);
+    s32 winW = 640, winH = 480;
+    if (mWindow) {
+        mWindow->GetWindowSize(winW, winH);
+    }
+    if (winW <= 0) winW = 1;
+    if (winH <= 0) winH = 1;
+
+    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
+    if (scale <= 0.0f) scale = 1.0f;
+    GLsizei vpW = static_cast<GLsizei>(640.0f * scale);
+    GLsizei vpH = static_cast<GLsizei>(480.0f * scale);
+    GLint vpX = (winW - vpW) / 2;
+    GLint vpY = (winH - vpH) / 2;
+
+    g_gl.glViewport(vpX, vpY, vpW, vpH);
+
+    // Fixed 640x480 orthographic projection mapping virtual coordinates to clip space.
+    if (mProjUniform >= 0) {
+        const GLfloat sx = 2.0f / 640.0f;
+        const GLfloat sy = -2.0f / 480.0f;
         const GLfloat proj[16] = {
             sx, 0.0f, 0.0f, 0.0f,
             0.0f, sy, 0.0f, 0.0f,
@@ -338,6 +371,9 @@ void OpenGLRenderer::BeginScene() {
     }
     if (mTextureUniform >= 0) {
         g_gl.glUniform1i(mTextureUniform, 0);
+    }
+    if (mBlendModeUniform >= 0) {
+        g_gl.glUniform1i(mBlendModeUniform, 0);
     }
 }
 
@@ -366,37 +402,6 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
     auto it = mTextures.find(texture);
     const bool hasTexture = (it != mTextures.end());
 
-    // Diagnostic: check for non-finite / warped vertex coordinates
-    bool hasNonFinite = false;
-    float minX = 1e9f, maxX = -1e9f, minY = 1e9f, maxY = -1e9f;
-    for (int i = 0; i < count; ++i) {
-        if (!std::isfinite(verts[i].x) || !std::isfinite(verts[i].y) || !std::isfinite(verts[i].z)) {
-            hasNonFinite = true;
-        }
-        if (verts[i].x < minX) minX = verts[i].x;
-        if (verts[i].x > maxX) maxX = verts[i].x;
-        if (verts[i].y < minY) minY = verts[i].y;
-        if (verts[i].y > maxY) maxY = verts[i].y;
-    }
-    if (hasNonFinite) {
-        static int sWarpCount = 0;
-        if (++sWarpCount <= 10) {
-            std::printf("[DIAG-3D] Warning: non-finite vertex detected in primitive!\n");
-            std::fflush(stdout);
-        }
-    }
-
-    // Periodic bounds reporting (every 300 primitive batches)
-    static int sBatchCounter = 0;
-    if (++sBatchCounter % 300 == 0 && mWindow) {
-        s32 winW = 640, winH = 480;
-        mWindow->GetWindowSize(winW, winH);
-        const bool inside = (maxX >= 0 && minX <= winW && maxY >= 0 && minY <= winH);
-        std::printf("[DIAG-3D] Bounds: X=[%.1f, %.1f], Y=[%.1f, %.1f] insideWindow=%s (%dx%d)\n",
-                    minX, maxX, minY, maxY, inside ? "YES" : "NO", winW, winH);
-        std::fflush(stdout);
-    }
-
     // Normalize texture coordinates from pixel space [0, texW]x[0, texH] to [0.0, 1.0]
     std::vector<HalVertex> normVerts(verts, verts + count);
     if (hasTexture && it->second.width > 0 && it->second.height > 0) {
@@ -418,10 +423,20 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
         g_gl.glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    if (flags & (RENDER_ADDITIVE)) {
+    if (flags & 0x200) {
+        // Additive blending
+        if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 2);
+        g_gl.glEnable(GL_BLEND);
         g_gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    } else {
+    } else if ((flags & 0x180) || (flags & 0x80)) {
+        // Alpha blending / transparent sprites
+        if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 1);
+        g_gl.glEnable(GL_BLEND);
         g_gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    } else {
+        // Opaque drawing
+        if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 0);
+        g_gl.glDisable(GL_BLEND);
     }
 
     g_gl.glBindBuffer(GL_ARRAY_BUFFER, mVbo);
@@ -509,7 +524,7 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
             u32* dstRow = rgbaBuffer.data() + static_cast<size_t>(y) * desc.width;
             for (u16 x = 0; x < desc.width; ++x) {
                 const u8 val = srcRow[x];
-                if (val == 0 && desc.bTransparent) {
+                if (val == 0) {
                     dstRow[x] = 0;
                 } else if (desc.pPaletteRGBA) {
                     dstRow[x] = desc.pPaletteRGBA[val];
@@ -538,9 +553,6 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     info.pPaletteRGBA = desc.pPaletteRGBA;
     info.pPixels = desc.pPixels;
     mTextures[handle] = info;
-
-    const size_t totalPixels = static_cast<size_t>(desc.width) * desc.height;
-    CheckTextureDiagnostics(handle, desc.width, desc.height, desc.bitsPerPixel, uploadPixels, totalPixels, "Register");
 
     return handle;
 }
@@ -582,7 +594,7 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
             u32* dstRow = rgbaBuffer.data() + static_cast<size_t>(y) * info.width;
             for (u16 x = 0; x < info.width; ++x) {
                 const u8 val = srcRow[x];
-                if (val == 0 && info.bTransparent) {
+                if (val == 0) {
                     dstRow[x] = 0;
                 } else if (info.pPaletteRGBA) {
                     dstRow[x] = info.pPaletteRGBA[val];
@@ -599,9 +611,6 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                       static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
-
-    const size_t totalPixels = static_cast<size_t>(info.width) * info.height;
-    CheckTextureDiagnostics(handle, info.width, info.height, info.bitsPerPixel, uploadPixels, totalPixels, "Update");
 }
 
 void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {

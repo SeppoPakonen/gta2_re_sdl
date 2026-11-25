@@ -64,6 +64,8 @@ bool EngineRunner::Initialize(int argc, char** argv) {
         glRenderer.SetProcLoader(reinterpret_cast<void*(*)(const char*)>(SDL_GL_GetProcAddress));
         glRenderer.Initialize(&winSys);
     }
+    audioBackend.Initialize(22050, 2, 1024);
+    inputBackend.Initialize();
     DMA_Video_LoadDll_5EB970(nullptr);
     GBH_GraphicsInit_Modern();
 

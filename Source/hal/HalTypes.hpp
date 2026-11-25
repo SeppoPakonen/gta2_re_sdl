@@ -47,15 +47,11 @@ struct TextureDesc {
 using TextureHandle = u32;
 constexpr TextureHandle kInvalidTextureHandle = 0;
 
-// Render primitive flags
+// Render primitive flags (matching GTA2 engine draw flags)
 enum RenderFlags : u32 {
     RENDER_NONE             = 0,
-    RENDER_ALPHA_BLEND      = 1 << 0,
-    RENDER_TEXTURE_FILTER   = 1 << 1,
-    RENDER_FIT_TO_TEXTURE   = 1 << 2,
-    RENDER_ALPHA_TEST       = 1 << 3,
-    RENDER_ADDITIVE         = 1 << 4,
-    RENDER_SUBTRACTIVE      = 1 << 5,
+    RENDER_ALPHA_BLEND      = 0x180,
+    RENDER_ADDITIVE         = 0x200,
 };
 
 // Engine events

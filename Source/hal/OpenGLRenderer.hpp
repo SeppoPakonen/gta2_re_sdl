@@ -53,6 +53,7 @@ private:
     int mProjUniform = -1;
     int mTextureUniform = -1;
     int mUseTextureUniform = -1;
+    int mBlendModeUniform = -1;
 
     unsigned int mVbo = 0;
 

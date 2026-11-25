@@ -79,6 +79,7 @@ void SDLInputBackend::Update() {
 }
 
 bool SDLInputBackend::Initialize() {
+    SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     mControllers.clear();
     for (size_t i = 0; i < 256; ++i) {
         mKeysDownCurrent[i] = false;
@@ -100,6 +101,7 @@ void SDLInputBackend::Shutdown() {
         mKeysDownCurrent[i] = false;
         mKeysDownPrev[i] = false;
     }
+    SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
 
 bool SDLInputBackend::IsKeyDown(u32 dikScancode) const {

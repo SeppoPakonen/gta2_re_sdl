@@ -250,7 +250,7 @@ static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {
         u8 r = (raw >> 16) & 0xFF;
         u8 g = (raw >> 8) & 0xFF;
         u8 b = raw & 0xFF;
-        u8 a = 255;
+        u8 a = (i == 0) ? 0 : 255;
         // In memory on x86 little-endian: byte 0=R, 1=G, 2=B, 3=A
         pal.colorsRGBA[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
                             (static_cast<u32>(b) << 16) | (static_cast<u32>(a) << 24);

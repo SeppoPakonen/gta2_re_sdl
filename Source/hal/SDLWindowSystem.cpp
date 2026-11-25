@@ -16,6 +16,7 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
     if (fullscreen) {
         flags = static_cast<SDL_WindowFlags>(flags | SDL_WINDOW_FULLSCREEN);
     }
+    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", "0");
     mWindow = SDL_CreateWindow(title ? title : "GTA2", width, height, flags);
     if (!mWindow) {
         return false;
@@ -140,6 +141,7 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
     if (fullscreen) {
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
+    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", "0");
     mWindow = SDL_CreateWindow(title ? title : "GTA2",
                                SDL_WINDOWPOS_CENTERED,
                                SDL_WINDOWPOS_CENTERED,
