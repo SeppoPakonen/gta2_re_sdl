@@ -42,11 +42,15 @@ bool SDLAudioBackend::Initialize(s32 sampleRate, s32 channels, s32 bufferSize) {
     spec.callback = AudioCallback;
     spec.userdata = this;
 
-    mAudioDevice = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, SDL_AUDIO_ALLOW_ANY_CHANGE);
+    SDL_AudioSpec obtained{};
+    mAudioDevice = SDL_OpenAudioDevice(nullptr, 0, &spec, &obtained, 0);
     if (mAudioDevice == 0) {
+        printf("[AUDIO-INIT] SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
         return false;
     }
 
+    printf("[AUDIO-INIT] SDL Audio initialized successfully: device=%u, freq=%d, channels=%d, samples=%d\n",
+           mAudioDevice, obtained.freq, obtained.channels, obtained.samples);
     SDL_PauseAudioDevice(mAudioDevice, 0);
     mInitialized = true;
     mMasterVolume = 1.0f;
@@ -127,6 +131,8 @@ ChannelHandle SDLAudioBackend::PlaySample(SoundId soundId, f32 volume, f32 pan, 
             ch.volume = std::clamp(volume, 0.0f, 1.0f);
             ch.pan = std::clamp(pan, -1.0f, 1.0f);
             ch.loop = loop;
+            printf("[AUDIO] PlaySample: soundId=%u vol=%.2f pan=%.2f loop=%d -> voice channel %zu\n",
+                   soundId, volume, pan, loop ? 1 : 0, i);
             return static_cast<ChannelHandle>(i);
         }
     }
@@ -206,7 +212,7 @@ void SDLAudioBackend::Update() {
 void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
     std::lock_guard<std::mutex> lock(mMutex);
 
-    const size_t totalFrames = static_cast<size_t>(len) / 2; // 16-bit = 2 bytes per sample (per channel)
+    const size_t totalFrames = static_cast<size_t>(len) / 4; // 16-bit stereo = 4 bytes per frame
     if (totalFrames == 0) return;
 
     // Zero-initialize the output buffer
@@ -279,6 +285,22 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
         if (!ch.loop && ch.cursor >= sample.frames) {
             ch.active = false;
         }
+    }
+
+    uint32_t nonZeroInThisBuffer = 0;
+    for (int b = 0; b < len; ++b) {
+        if (stream[b] != 0) {
+            nonZeroInThisBuffer++;
+        }
+    }
+    static uint64_t sTotalNonZeroBytes = 0;
+    static uint32_t sMixCallbackCount = 0;
+    sTotalNonZeroBytes += nonZeroInThisBuffer;
+    sMixCallbackCount++;
+    if (sMixCallbackCount % 100 == 0 || (nonZeroInThisBuffer > 0 && sMixCallbackCount <= 10)) {
+        printf("[AUDIO-MIX] Callback #%u: %u/%d non-zero bytes mixed (total non-zero bytes sent: %llu)\n",
+               sMixCallbackCount, nonZeroInThisBuffer, len, static_cast<unsigned long long>(sTotalNonZeroBytes));
+        fflush(stdout);
     }
 }
 

@@ -32,6 +32,10 @@ bool EngineRunner::Initialize(int argc, char** argv) {
             vfs.AddSearchRoot(pDataDir);
         }
     }
+    if (const char* home = std::getenv("HOME")) {
+        std::string defaultWine = std::string(home) + "/.wine/drive_c/Program Files (x86)/Rockstar Games/GTA2";
+        vfs.AddSearchRoot(defaultWine.c_str());
+    }
     ctx.pFileSystem = &vfs;
 
     static hal::SDLTimeSystem timeSys;
@@ -49,7 +53,7 @@ bool EngineRunner::Initialize(int argc, char** argv) {
     ctx.pInput = &inputBackend;
 
     // Check command line arguments for --demo or live mode
-    bReplayMode_6F5B71 = 1; // Default to attract demo mode for verification
+    bReplayMode_6F5B71 = 0; // Default to normal game / frontend menu
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--nodemo" || arg == "--game") {

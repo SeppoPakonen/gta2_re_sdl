@@ -23,6 +23,7 @@
 #include "Ped.hpp"
 #include "Player.hpp"
 #include "rng.hpp"
+#include "Frontend.hpp"
 #include <cstdlib>
 #include <cstdio>
 
@@ -34,6 +35,7 @@ DEFINE_GLOBAL(u8, bForceGameUpdate_6F5880, 0x6F5880);
 DEFINE_GLOBAL_INIT(u8, max_frame_rate_626A08, 1, 0x626A08);
 DEFINE_GLOBAL(u8, min_frame_rate_706C50, 0x706C50);
 EXTERN_GLOBAL(bool, bSkip_draw_67D4EA);
+EXTERN_GLOBAL(u8, bDoFrontEnd_626B68);
 DEFINE_GLOBAL(u8, bReplayMode_6F5B71, 0);
 DEFINE_GLOBAL(void*, gHInstance_708220, nullptr);
 
@@ -152,9 +154,18 @@ void Draw_4DA7B0() {
 }
 
 void GameLoop_Initialize() {
-    // Initialize HAL subsystems already done by EngineRunner.
-    // Just start the game simulation (equivalent of legacy InitializeGame_4DA4D0).
-    InitializeGame_4DA4D0();
+    gRoot_sound_66B038.Init_40EF80();
+
+    if (bReplayMode_6F5B71 != 0) {
+        bDoFrontEnd_626B68 = 0;
+        InitializeGame_4DA4D0();
+    } else {
+        bDoFrontEnd_626B68 = 1;
+        Frontend::create_4ACFA0();
+        if (gFrontend_67DC84) {
+            gFrontend_67DC84->ChangeMenuPage_4B3170(MENUPAGE_START_MENU);
+        }
+    }
     bInitialized = true;
 }
 
@@ -171,6 +182,38 @@ bool GameLoop_StepFrame() {
     }
     if (gta2::hal::GetHal().pAudio) {
         gta2::hal::GetHal().pAudio->Update();
+    }
+
+    if (bDoFrontEnd_626B68 && gFrontend_67DC84) {
+        s32 state = gFrontend_67DC84->Run_4AEDB0();
+        sTotalDrawnFrames++;
+
+        const char* pScreenshotEnv = std::getenv("GTA2_SCREENSHOT_PATH");
+        if (pScreenshotEnv && gta2::hal::GetHal().pRenderer && (sTotalDrawnFrames == 5 || sTotalDrawnFrames == 20)) {
+            gta2::hal::GetHal().pRenderer->CaptureScreenshot(pScreenshotEnv);
+            std::printf("[Screenshot] Saved frontend frame %d to %s\n", sTotalDrawnFrames, pScreenshotEnv);
+        }
+
+        pVid_FlipBuffers(gVidSys_7071D0);
+
+        if (state == Quit_1) {
+            Frontend::destroy_4AD070();
+            bDoFrontEnd_626B68 = 0;
+            return false;
+        } else if (state == Start_Game_3) {
+            Frontend::destroy_4AD070();
+            bDoFrontEnd_626B68 = 0;
+            bReplayMode_6F5B71 = 0;
+            InitializeGame_4DA4D0();
+            return true;
+        } else if (state == Start_Replay_4) {
+            Frontend::destroy_4AD070();
+            bDoFrontEnd_626B68 = 0;
+            bReplayMode_6F5B71 = 1;
+            InitializeGame_4DA4D0();
+            return true;
+        }
+        return true;
     }
 
     // Run a game frame (pVid_FlipBuffers inside Draw_4DA7B0 swaps buffers when a frame is rendered).

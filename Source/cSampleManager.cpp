@@ -149,26 +149,7 @@ s32  cSampleManager::GetRandomDisplacement_58DC10(s32) const { return 0; }
 s32  cSampleManager::GetLoopStart_58DC30(s32) const { return 0; }
 s32  cSampleManager::GetLoopEnd_58DC50(s32) const { return 0; }
 s32  cSampleManager::GetSampleLength_58DC70(s32) const { return 0; }
-void cSampleManager::InitialiseChannel_58DC90(s32, s32) {}
-void cSampleManager::SetChannelVolume_58DCE0(s32, s32) {}
-void cSampleManager::SetChannelPan_58DD00(s32, s32) {}
-void cSampleManager::SetChannelFrequency_58DD20(s32, s32) {}
-void cSampleManager::SetChannelLoopPoints_58DD40(s32, s32, s32) {}
-void cSampleManager::SetChannelLoopCount_58DD60(s32, s32) {}
-bool cSampleManager::GetChannelUsedFlag_58DD80(s32) const { return false; }
-void cSampleManager::StartChannel_58DDB0(s32) {}
-void cSampleManager::StopChannel_58DDD0(s32) {}
-bool cSampleManager::InitialiseChannel3D_58DDF0(s32, s32, s32) { return false; }
-void cSampleManager::SetChannel3DVolume_58DE80(s32, s32) {}
-void cSampleManager::SetChannel3DPosition_58DEA0(s32, f32, f32, f32) {}
-void cSampleManager::SetChannel3DDistances_58DED0(s32, f32, f32) {}
-void cSampleManager::SetChannel3DFrequency_58DF00(s32, s32) {}
-void cSampleManager::SetChannel3DLoopPoints_58DF20(s32, s32, s32) {}
-void cSampleManager::SetChannel3DLoopCount_58DF50(s32, s32) {}
-bool cSampleManager::GetChannel3DUsedFlag_58DF70(s32) const { return false; }
-void cSampleManager::StartChannel3D_58DFA0(s32) {}
-void cSampleManager::StopChannel3D_58DFC0(s32) {}
-u8   cSampleManager::Get3DSampleCount_58E000() const { return 0; }
+u8   cSampleManager::Get3DSampleCount_58E000() const { return 16; }
 void cSampleManager::SetEaxEnvironment_58E010(s32) {}
 bool cSampleManager::Open3DProvider_58E140(s32) { return false; }
 void cSampleManager::Close3DProvider_58E1C0() {}
@@ -184,7 +165,6 @@ void cSampleManager::PlayAtIdx_58E7F0(s32) {}
 bool cSampleManager::SampleNotDone_58E880() const { return false; }
 void cSampleManager::EndSample_58E8A0() {}
 void cSampleManager::EndSample_58E960() {}
-bool cSampleManager::LoadWavSdtData_58E980(const char_type*) { return true; }
 bool cSampleManager::Reacquire_58E2A0() { return true; }
 void cSampleManager::Release_58E290() {}
 #endif
@@ -1238,49 +1218,266 @@ bool cSampleManager::LoadWavSdtData_58E980(const char_type* pRawOrSdtName)
 }
 #else // GTA2_MODERN_BUILD
 
+static gta2::hal::SoundId sSdtSoundIds[320] = { gta2::hal::kInvalidSoundId };
+static s32 sChannelSampleIdx[16] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+static gta2::hal::ChannelHandle sChannelHandle[16] = {
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle
+};
+static s32 sChannelVolume[16] = { 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127 };
+static s32 sChannelPan[16] = { 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64 };
+static bool sChannelLoop[16] = { false };
+
+static s32 s3DChannelSampleIdx[16] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+static gta2::hal::ChannelHandle s3DChannelHandle[16] = {
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle,
+    gta2::hal::kInvalidChannelHandle, gta2::hal::kInvalidChannelHandle
+};
+static s32 s3DChannelVolume[16] = { 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127 };
+static bool s3DChannelLoop[16] = { false };
+static f32 s3DMinDist[16] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+static f32 s3DMaxDist[16] = { 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f };
+
 bool cSampleManager::SoundInit_58D6C0(s32* /*not_used*/)
 {
+    printf("[AUDIO] cSampleManager::SoundInit_58D6C0 initializing channels\n");
+    field_1EB0_count_samples = 16;
+    for (int i = 0; i < 16; ++i) {
+        sChannelSampleIdx[i] = -1;
+        sChannelHandle[i] = gta2::hal::kInvalidChannelHandle;
+        sChannelVolume[i] = 127;
+        sChannelPan[i] = 64;
+        sChannelLoop[i] = false;
+
+        s3DChannelSampleIdx[i] = -1;
+        s3DChannelHandle[i] = gta2::hal::kInvalidChannelHandle;
+        s3DChannelVolume[i] = 127;
+        s3DChannelLoop[i] = false;
+        s3DMinDist[i] = 1.0f;
+        s3DMaxDist[i] = 100.0f;
+    }
+    field_A4_bLoaded = true;
+    return true;
+}
+
+bool cSampleManager::LoadWavSdtData_58E980(const char_type* pRawOrSdtName)
+{
     auto* pAudio = gta2::hal::GetHal().pAudio;
-    if (!pAudio) {
+    if (!pAudio || !pRawOrSdtName) {
         return false;
     }
 
-    // Load samples from SDT/RAW via AudioContainerParser and register with HAL audio.
-    const char_type* audioFiles[] = {
-        "data\\audio\\wil.sdt",
-        "data\\audio\\fstyle.sdt"
-    };
-    std::vector<std::pair<std::string, std::string>> filePairs;
-    for (const char_type* sdtName : audioFiles) {
-        std::string sdt(sdtName);
-        std::string raw = sdt;
-        if (raw.size() >= 4) {
-            raw.replace(raw.size() - 4, 4, ".raw");
-        }
-        filePairs.emplace_back(sdt, raw);
+    std::string base(pRawOrSdtName);
+    size_t lastSlash = base.find_last_of("/\\");
+    if (lastSlash != std::string::npos) {
+        base = base.substr(lastSlash + 1);
+    }
+    size_t dotPos = base.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        base = base.substr(0, dotPos);
     }
 
-    bool anyLoaded = false;
-    for (const auto& [sdtPath, rawPath] : filePairs) {
-        std::vector<gta2::hal::LoadedSoundSample> samples;
-        if (gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples)) {
-            for (auto& sample : samples) {
-                pAudio->LoadSampleFromMemory(sample.pcmData.data(), sample.pcmData.size(),
-                                             sample.desc.playbackRate, sample.bitsPerSample,
-                                             sample.channels);
-            }
-            anyLoaded = true;
+    std::string sdtPath = "data/Audio/" + base + ".sdt";
+    std::string rawPath = "data/Audio/" + base + ".raw";
+
+    printf("[AUDIO] Loading audio container for '%s' (sdt=%s, raw=%s)\n", pRawOrSdtName, sdtPath.c_str(), rawPath.c_str());
+
+    std::vector<gta2::hal::LoadedSoundSample> samples;
+    bool ok = gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples);
+    if (!ok) {
+        sdtPath = "data/Audio/" + base + ".SDT";
+        rawPath = "data/Audio/" + base + ".RAW";
+        ok = gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples);
+    }
+    if (!ok) {
+        sdtPath = "data/audio/" + base + ".sdt";
+        rawPath = "data/audio/" + base + ".raw";
+        ok = gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples);
+    }
+
+    if (!ok) {
+        printf("[AUDIO] Failed to load container for %s\n", pRawOrSdtName);
+        return false;
+    }
+
+    printf("[AUDIO] Successfully loaded %zu samples for %s\n", samples.size(), pRawOrSdtName);
+
+    for (int i = 0; i < 320; ++i) {
+        if (sSdtSoundIds[i] != gta2::hal::kInvalidSoundId) {
+            pAudio->UnloadSample(sSdtSoundIds[i]);
+            sSdtSoundIds[i] = gta2::hal::kInvalidSoundId;
         }
     }
-    field_A4_bLoaded = anyLoaded;
-    return anyLoaded;
+
+    for (size_t i = 0; i < samples.size() && i < 320; ++i) {
+        auto& sample = samples[i];
+        field_A8_sdt_entries[i].field_0_offset = sample.desc.offset;
+        field_A8_sdt_entries[i].field_4_sample_length = sample.desc.sampleLength;
+        field_A8_sdt_entries[i].field_8_playBackRate = sample.desc.playbackRate;
+        field_A8_sdt_entries[i].field_C_random_displacement = sample.desc.randomDisplacement;
+        field_A8_sdt_entries[i].field_10_loop_start = sample.desc.loopStart;
+        field_A8_sdt_entries[i].field_14_loop_end = sample.desc.loopEnd;
+
+        sSdtSoundIds[i] = pAudio->LoadSampleFromMemory(
+            sample.pcmData.data(), sample.pcmData.size(),
+            sample.desc.playbackRate, sample.bitsPerSample, sample.channels
+        );
+    }
+
+    field_A4_bLoaded = true;
+    return true;
+}
+
+void cSampleManager::InitialiseChannel_58DC90(s32 channel, s32 sample_idx) {
+    if (channel >= 0 && channel < 16) {
+        sChannelSampleIdx[channel] = sample_idx;
+        sChannelVolume[channel] = 127;
+        sChannelPan[channel] = 64;
+        sChannelLoop[channel] = false;
+    }
+}
+
+void cSampleManager::SetChannelVolume_58DCE0(s32 channel, s32 volume) {
+    if (channel >= 0 && channel < 16) {
+        sChannelVolume[channel] = volume;
+        if (sChannelHandle[channel] != gta2::hal::kInvalidChannelHandle && gta2::hal::GetHal().pAudio) {
+            gta2::hal::GetHal().pAudio->SetChannelVolume(sChannelHandle[channel], static_cast<float>(volume) / 127.0f);
+        }
+    }
+}
+
+void cSampleManager::SetChannelPan_58DD00(s32 channel, s32 pan) {
+    if (channel >= 0 && channel < 16) {
+        sChannelPan[channel] = pan;
+        if (sChannelHandle[channel] != gta2::hal::kInvalidChannelHandle && gta2::hal::GetHal().pAudio) {
+            gta2::hal::GetHal().pAudio->SetChannelPan(sChannelHandle[channel], static_cast<float>(pan - 64) / 64.0f);
+        }
+    }
+}
+
+void cSampleManager::SetChannelFrequency_58DD20(s32, s32) {}
+void cSampleManager::SetChannelLoopPoints_58DD40(s32, s32, s32) {}
+
+void cSampleManager::SetChannelLoopCount_58DD60(s32 channel, s32 loopCount) {
+    if (channel >= 0 && channel < 16) {
+        sChannelLoop[channel] = (loopCount != 1);
+    }
+}
+
+bool cSampleManager::GetChannelUsedFlag_58DD80(s32 channel) const {
+    if (channel >= 0 && channel < 16) {
+        return sChannelHandle[channel] != gta2::hal::kInvalidChannelHandle;
+    }
+    return false;
+}
+
+void cSampleManager::StartChannel_58DDB0(s32 channel) {
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (!pAudio || channel < 0 || channel >= 16) return;
+
+    s32 sfx = sChannelSampleIdx[channel];
+    if (sfx >= 0 && sfx < 320 && sSdtSoundIds[sfx] != gta2::hal::kInvalidSoundId) {
+        float vol = static_cast<float>(sChannelVolume[channel]) / 127.0f;
+        float pan = static_cast<float>(sChannelPan[channel] - 64) / 64.0f;
+        sChannelHandle[channel] = pAudio->PlaySample(sSdtSoundIds[sfx], vol, pan, sChannelLoop[channel]);
+    }
+}
+
+void cSampleManager::StopChannel_58DDD0(s32 channel) {
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (pAudio && channel >= 0 && channel < 16) {
+        if (sChannelHandle[channel] != gta2::hal::kInvalidChannelHandle) {
+            pAudio->StopChannel(sChannelHandle[channel]);
+            sChannelHandle[channel] = gta2::hal::kInvalidChannelHandle;
+        }
+    }
+}
+
+bool cSampleManager::InitialiseChannel3D_58DDF0(s32 channel, s32 nSfx, s32 /*rate*/) {
+    if (channel >= 0 && channel < 16) {
+        s3DChannelSampleIdx[channel] = nSfx;
+        s3DChannelVolume[channel] = 127;
+        s3DChannelLoop[channel] = false;
+        return true;
+    }
+    return false;
+}
+
+void cSampleManager::SetChannel3DVolume_58DE80(s32 idx, s32 vol) {
+    if (idx >= 0 && idx < 16) {
+        s3DChannelVolume[idx] = vol;
+        if (s3DChannelHandle[idx] != gta2::hal::kInvalidChannelHandle && gta2::hal::GetHal().pAudio) {
+            gta2::hal::GetHal().pAudio->SetChannelVolume(s3DChannelHandle[idx], static_cast<float>(vol) / 127.0f);
+        }
+    }
+}
+
+void cSampleManager::SetChannel3DPosition_58DEA0(s32, f32, f32, f32) {}
+
+void cSampleManager::SetChannel3DDistances_58DED0(s32 channel, f32 maxDist, f32 minDist) {
+    if (channel >= 0 && channel < 16) {
+        s3DMaxDist[channel] = maxDist;
+        s3DMinDist[channel] = minDist;
+    }
+}
+
+void cSampleManager::SetChannel3DFrequency_58DF00(s32, s32) {}
+void cSampleManager::SetChannel3DLoopPoints_58DF20(s32, s32, s32) {}
+
+void cSampleManager::SetChannel3DLoopCount_58DF50(s32 channel, s32 loopCount) {
+    if (channel >= 0 && channel < 16) {
+        s3DChannelLoop[channel] = (loopCount != 1);
+    }
+}
+
+bool cSampleManager::GetChannel3DUsedFlag_58DF70(s32 channel) const {
+    if (channel >= 0 && channel < 16) {
+        return s3DChannelHandle[channel] != gta2::hal::kInvalidChannelHandle;
+    }
+    return false;
+}
+
+void cSampleManager::StartChannel3D_58DFA0(s32 channel) {
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (!pAudio || channel < 0 || channel >= 16) return;
+
+    s32 sfx = s3DChannelSampleIdx[channel];
+    if (sfx >= 0 && sfx < 320 && sSdtSoundIds[sfx] != gta2::hal::kInvalidSoundId) {
+        float vol = static_cast<float>(s3DChannelVolume[channel]) / 127.0f;
+        gta2::hal::SoundParams3D params{};
+        params.minDistance = s3DMinDist[channel];
+        params.maxDistance = s3DMaxDist[channel];
+        s3DChannelHandle[channel] = pAudio->PlaySample3D(sSdtSoundIds[sfx], vol, params, s3DChannelLoop[channel]);
+    }
+}
+
+void cSampleManager::StopChannel3D_58DFC0(s32 channel) {
+    auto* pAudio = gta2::hal::GetHal().pAudio;
+    if (pAudio && channel >= 0 && channel < 16) {
+        if (s3DChannelHandle[channel] != gta2::hal::kInvalidChannelHandle) {
+            pAudio->StopChannel(s3DChannelHandle[channel]);
+            s3DChannelHandle[channel] = gta2::hal::kInvalidChannelHandle;
+        }
+    }
 }
 
 void cSampleManager::PlaySampleRange_58E8C0(u32 idx, u32 /*end_idx*/)
 {
     auto* pAudio = gta2::hal::GetHal().pAudio;
-    if (pAudio) {
-        pAudio->PlaySample(static_cast<gta2::hal::SoundId>(idx), 1.0f, 0.0f, false);
+    if (pAudio && idx < 320 && sSdtSoundIds[idx] != gta2::hal::kInvalidSoundId) {
+        pAudio->PlaySample(sSdtSoundIds[idx], 1.0f, 0.0f, false);
     }
 }
 

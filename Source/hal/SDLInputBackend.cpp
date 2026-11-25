@@ -23,8 +23,10 @@ void SDLInputBackend::HandleControllerEvent(const SDL_Event& ev) {
 
 void SDLInputBackend::HandleKeyboardEvent(const SDL_Event& ev) {
     if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
-        int scancode = DikToSdlScancode(SdlScancodeToDik(ev.key.keysym.scancode));
-        mKeysDownCurrent[scancode] = (ev.type == SDL_KEYDOWN);
+        u32 dik = SdlScancodeToDik(ev.key.keysym.scancode);
+        if (dik < 256) {
+            mKeysDownCurrent[dik] = (ev.type == SDL_KEYDOWN);
+        }
     }
 }
 
@@ -53,28 +55,25 @@ void SDLInputBackend::UpdateControllerStates() {
 }
 
 void SDLInputBackend::UpdateKeyboardState() {
-    // Key states updated per event in HandleKeyboardEvent
+    for (size_t i = 0; i < 256; ++i) {
+        mKeysDownPrev[i] = mKeysDownCurrent[i];
+    }
+    int numKeys = 0;
+    const Uint8* state = SDL_GetKeyboardState(&numKeys);
+    if (state && numKeys > 0) {
+        for (u32 dik = 0; dik < 256; ++dik) {
+            u32 sdlScancode = DikToSdlScancode(dik);
+            if (sdlScancode < static_cast<u32>(numKeys)) {
+                mKeysDownCurrent[dik] = (state[sdlScancode] != 0);
+            } else {
+                mKeysDownCurrent[dik] = false;
+            }
+        }
+    }
 }
 
 void SDLInputBackend::Update() {
-    SDL_Event sdlEvent;
-    while (SDL_PollEvent(&sdlEvent)) {
-        switch (sdlEvent.type) {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-                HandleKeyboardEvent(sdlEvent);
-                break;
-            case SDL_CONTROLLERBUTTONDOWN:
-            case SDL_CONTROLLERBUTTONUP:
-            case SDL_CONTROLLERAXISMOTION:
-            case SDL_CONTROLLERDEVICEADDED:
-            case SDL_CONTROLLERDEVICEREMOVED:
-                HandleControllerEvent(sdlEvent);
-                break;
-            default:
-                break;
-        }
-    }
+    UpdateKeyboardState();
     UpdateControllerStates();
 }
 

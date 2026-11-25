@@ -57,5 +57,7 @@ android/app/build/
 # Local build/asset dirs (not committed)
 build_debug*/
 assets/
+data
+player
 crash_reports/
-player/
+*.png

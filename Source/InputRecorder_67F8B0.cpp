@@ -332,7 +332,11 @@ void InputDevices::get_registry_controls_498C00()
 {
     for (u32 i = 0; i < 12; ++i)
     {
-        const u32 setting = gRegistry_6FF968.Get_Control_Setting_587010(i, gDefaultControls_61A9E4[i]);
+        u32 setting = gRegistry_6FF968.Get_Control_Setting_587010(i, gDefaultControls_61A9E4[i]);
+        if ((setting & 0xFF) == 0)
+        {
+            setting = gDefaultControls_61A9E4[i];
+        }
         gControlDeviceType_67B91C[i] = setting >> 15;
         gPlayerControlsBinding_67B6E8[i] = static_cast<u8>(setting);
     }

@@ -68,7 +68,7 @@ bool AudioContainerParser::LoadContainer(
         for (const auto& desc : entries) {
             LoadedSoundSample sample;
             sample.desc = desc;
-            sample.channels = 2; // GTA2 .raw files are typically stereo 16-bit.
+            sample.channels = 1; // GTA2 .raw files are 16-bit mono PCM
             sample.bitsPerSample = 16;
 
             s32 off = desc.offset;

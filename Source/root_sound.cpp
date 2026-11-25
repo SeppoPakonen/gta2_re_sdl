@@ -39,31 +39,11 @@ void root_sound::DeinitializeAudio_40EF90()
     gSound_obj_66F680.DeinitializeAudio_419E50();
 }
 
-#if !defined(GTA2_MODERN_BUILD)
 MATCH_FUNC(0x40EFA0)
 void root_sound::Service_40EFA0()
 {
     gSound_obj_66F680.Service_419EF0();
 }
-#else
-void root_sound::Service_40EFA0()
-{
-    auto* pAudio = gta2::hal::GetHal().pAudio;
-    if (!pAudio) {
-        return;
-    }
-
-    // Update the 3D audio listener (camera/player position). The concrete
-    // listener transform is owned by the game/camera; default to origin here.
-    pAudio->UpdateListener3D(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-
-    // Service active 3D sound emitters through the HAL audio backend.
-    gta2::hal::SoundParams3D params{};
-    params.minDistance = 1.0f;
-    params.maxDistance = 100.0f;
-    pAudio->PlaySample3D(0, 1.0f, params, false);
-}
-#endif
 
 MATCH_FUNC(0x40EFB0)
 s32 root_sound::AddSoundObject_40EFB0(SoundObject* pSoundObj)

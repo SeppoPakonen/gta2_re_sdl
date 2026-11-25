@@ -322,15 +322,13 @@ void OpenGLRenderer::SetViewport(s32 x, s32 y, s32 width, s32 height) {
     if (winW <= 0) winW = 1;
     if (winH <= 0) winH = 1;
 
-    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
-    if (scale <= 0.0f) scale = 1.0f;
-    GLint baseVpX = (winW - static_cast<GLint>(640.0f * scale)) / 2;
-    GLint baseVpY = (winH - static_cast<GLint>(480.0f * scale)) / 2;
+    float scaleX = static_cast<float>(winW) / 640.0f;
+    float scaleY = static_cast<float>(winH) / 480.0f;
 
-    GLint vpX = baseVpX + static_cast<GLint>(static_cast<float>(x) * scale);
-    GLint vpY = baseVpY + static_cast<GLint>(static_cast<float>(480 - (y + height)) * scale);
-    GLsizei vpW = static_cast<GLsizei>(static_cast<float>(width) * scale);
-    GLsizei vpH = static_cast<GLsizei>(static_cast<float>(height) * scale);
+    GLint vpX = static_cast<GLint>(static_cast<float>(x) * scaleX);
+    GLint vpY = static_cast<GLint>(static_cast<float>(480 - (y + height)) * scaleY);
+    GLsizei vpW = static_cast<GLsizei>(static_cast<float>(width) * scaleX);
+    GLsizei vpH = static_cast<GLsizei>(static_cast<float>(height) * scaleY);
 
     g_gl.glViewport(vpX, vpY, vpW, vpH);
 }
@@ -348,14 +346,7 @@ void OpenGLRenderer::BeginScene() {
     if (winW <= 0) winW = 1;
     if (winH <= 0) winH = 1;
 
-    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
-    if (scale <= 0.0f) scale = 1.0f;
-    GLsizei vpW = static_cast<GLsizei>(640.0f * scale);
-    GLsizei vpH = static_cast<GLsizei>(480.0f * scale);
-    GLint vpX = (winW - vpW) / 2;
-    GLint vpY = (winH - vpH) / 2;
-
-    g_gl.glViewport(vpX, vpY, vpW, vpH);
+    g_gl.glViewport(0, 0, winW, winH);
 
     // Fixed 640x480 orthographic projection mapping virtual coordinates to clip space.
     if (mProjUniform >= 0) {
