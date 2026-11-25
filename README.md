@@ -131,11 +131,7 @@ All platform subsystems are abstracted behind modern pure-virtual interfaces in 
 
 ---
 
-## 📜 Legacy Byte-Matching Build (Archival)
-For researchers interested in the historical byte-matching VC6 Windows 98 executable verification:
-```bash
-# Requires Visual C++ 6.0 toolchain & Wine environment
-python3 vc6_setup.py
-python3 build.py
-```
-*Note: Byte-matching is disabled by default and only activates when compiling with MSVC 6 or `-DGTA2_MATCHING_BUILD=ON`.*
+## 📜 Legacy Byte-Matching Target (Deprecated)
+The original Visual C++ 6.0 byte-matching build target (aimed at matching the 1999 Windows 98 retail executable byte-for-byte) is **deprecated and unmaintained**.
+
+Development is fully focused on the native, cross-platform SDL2/OpenGL modern engine. For historical reference, legacy tooling (`vc6_setup.py`, `build.py`) and matching scripts are retained in the repository archives, but all active maintenance, features, and platform support target the modern build.

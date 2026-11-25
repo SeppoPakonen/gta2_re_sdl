@@ -3,19 +3,13 @@ project (gta2_port LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-# The byte-matching VC6 build (build.py, Wine + VC6 toolchain) is the default only when
-# compiling with MSVC 6.0 (MSVC_VERSION == 1200). Modern MSVC, GCC, Clang, etc. default
-# to the modern portable build. Either can be forced with -DGTA2_MATCHING_BUILD=ON/OFF.
-if(MSVC AND MSVC_VERSION EQUAL 1200)
-    set(GTA2_MATCHING_BUILD_DEFAULT ON)
-else()
-    set(GTA2_MATCHING_BUILD_DEFAULT OFF)
-endif()
-
+# The VC6 byte-matching build target has been deprecated. The modern cross-platform
+# build (SDL2/SDL3 + OpenGL/GLES/GPU) is the standard and default target.
 option(GTA2_BACKEND "Target backend (SDL2, SDL3, HEADLESS)" "SDL2")
-option(GTA2_MATCHING_BUILD "Build byte-matching VC6 executable (Wine only)" ${GTA2_MATCHING_BUILD_DEFAULT})
+option(GTA2_MATCHING_BUILD "[DEPRECATED] Build byte-matching VC6 executable (unmaintained)" OFF)
 
 if(GTA2_MATCHING_BUILD)
+    message(DEPRECATION "The VC6 byte-matching build target is deprecated and unmaintained. Use the modern cross-platform build instead.")
     ENABLE_LANGUAGE(ASM_MASM)
 
     SET(CMAKE_WARN_VS6 CACHE BOOL OFF)
