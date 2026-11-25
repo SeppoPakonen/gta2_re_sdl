@@ -36,8 +36,8 @@ DEFINE_GLOBAL_INIT(u8, max_frame_rate_626A08, 1, 0x626A08);
 DEFINE_GLOBAL(u8, min_frame_rate_706C50, 0x706C50);
 EXTERN_GLOBAL(bool, bSkip_draw_67D4EA);
 EXTERN_GLOBAL(u8, bDoFrontEnd_626B68);
-DEFINE_GLOBAL(u8, bReplayMode_6F5B71, 0);
-DEFINE_GLOBAL(void*, gHInstance_708220, nullptr);
+EXTERN_GLOBAL(u8, bReplayMode_6F5B71);
+EXTERN_GLOBAL(void*, gHInstance_708220);
 
 static bool bInitialized = false;
 
@@ -155,6 +155,8 @@ void Draw_4DA7B0() {
 
 void GameLoop_Initialize() {
     gRoot_sound_66B038.Init_40EF80();
+    KeyboardLayout::create_4D5F50();
+    PlyDat::Create_56C2C0();
 
     if (bReplayMode_6F5B71 != 0) {
         bDoFrontEnd_626B68 = 0;

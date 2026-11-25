@@ -4,16 +4,18 @@
 // Engine state globals required by the modern build.
 // These are normally defined in winmain.cpp (excluded from gta2_core)
 // but must be available for the core library to link.
-DEFINE_GLOBAL(s32, window_width_706630, 640);
-DEFINE_GLOBAL(s32, window_height_706B50, 480);
-DEFINE_GLOBAL(char_type, gLighting_626A09, 0);
-DEFINE_GLOBAL(u32, gLightingDrawFlag_7068F4, 0);
-DEFINE_GLOBAL(u32, gBufferMode_706B34, 0);
-DEFINE_GLOBAL(bool, bStartNetworkGame_7081F0, false);
-DEFINE_GLOBAL(s32, gGTA2VersionMajor_708280, 10);
-DEFINE_GLOBAL(s32, gGTA2VersionMinor_708284, 5);
-DEFINE_GLOBAL(u8, bDoFrontEnd_626B68, 1);
-DEFINE_GLOBAL(NetworkGameSettings, gNetworkGameSettings_707098, {});
+DEFINE_GLOBAL(s32, window_width_706630, 0x706630);
+DEFINE_GLOBAL(s32, window_height_706B50, 0x706B50);
+DEFINE_GLOBAL(char_type, gLighting_626A09, 0x626A09);
+DEFINE_GLOBAL(u32, gLightingDrawFlag_7068F4, 0x7068F4);
+DEFINE_GLOBAL(u32, gBufferMode_706B34, 0x706B34);
+DEFINE_GLOBAL(s32, bStartNetworkGame_7081F0, 0x7081F0);
+DEFINE_GLOBAL(s32, gGTA2VersionMajor_708280, 0x708280);
+DEFINE_GLOBAL(s32, gGTA2VersionMinor_708284, 0x708284);
+DEFINE_GLOBAL_INIT(u8, bDoFrontEnd_626B68, true, 0x626B68);
+DEFINE_GLOBAL(NetworkGameSettings, gNetworkGameSettings_707098, 0x707098);
+DEFINE_GLOBAL(u8, bReplayMode_6F5B71, 0x6F5B71);
+DEFINE_GLOBAL(void*, gHInstance_708220, 0x708220);
 
 EXPORT void Start_GTA2Manager_5E4DE0() {}
 EXPORT void UpdateGameScreenSize_5D8E00() {}

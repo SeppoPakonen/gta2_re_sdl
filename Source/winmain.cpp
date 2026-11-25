@@ -76,7 +76,7 @@ void Gta2_CommonInit() {
 DEFINE_GLOBAL(u8, gNetDisconnectPlayersBits_6F56B8, 0x6F56B8); // TODO: move
 DEFINE_GLOBAL(u32, gNetworkPlayerIdx_6F56C8, 0x6F56C8); // TODO: move
 DEFINE_GLOBAL(u32, gPlayerQuit_6F5AEC, 0x6F5AEC); // TODO: move
-DEFINE_GLOBAL(u32, gMatchStartTime_6F5A28, 0x6F5A28); // TODO: move
+EXTERN_GLOBAL(u32, gMatchStartTime_6F5A28);
 DEFINE_GLOBAL(u32, gNetworkFrameCounter_6F5868, 0x6F5868); // TODO: move
 DEFINE_GLOBAL(u8, bRecordStartTime_6F593C, 0x6F593C); // TODO: move
 DEFINE_GLOBAL(Network_PlayerInputs, gCurrentNetInputs_6F57D8, 0x6F57D8); // TODO: move
@@ -98,7 +98,7 @@ DEFINE_GLOBAL(s32, gFramesOfCurrSecond_6F5858, 0x6F5858); // TODO: move
 DEFINE_GLOBAL(s32, gNetTimerBlinkCounter_6F5B74, 0x6F5B74);
 DEFINE_GLOBAL(s32, gNetTimerSeconds_6F5944, 0x6F5944);
 DEFINE_GLOBAL(u8, gNetTimerFlashing_6F59C0, 0x6F59C0); // TODO: move
-DEFINE_GLOBAL(NetworkGameSettings, gNetworkGameSettings_707098, 0x707098);
+EXTERN_GLOBAL(NetworkGameSettings, gNetworkGameSettings_707098);
 
 static T_gbh_SetBeginSceneCB pBeginSceneCB = NULL;
 
@@ -333,48 +333,48 @@ void force_link()
     particle.PoolAllocate();
 }
 
-DEFINE_GLOBAL(HINSTANCE, gHInstance_708220, 0x708220);
-DEFINE_GLOBAL(HANDLE, gMutex_707078, 0x707078);
-DEFINE_GLOBAL(s32, gGTA2VersionMajor_708280, 0x708280);
-DEFINE_GLOBAL(s32, gGTA2VersionMinor_708284, 0x708284);
+EXTERN_GLOBAL(HINSTANCE, gHInstance_708220);
+EXTERN_GLOBAL(HANDLE, gMutex_707078);
+EXTERN_GLOBAL(s32, gGTA2VersionMajor_708280);
+EXTERN_GLOBAL(s32, gGTA2VersionMinor_708284);
 DEFINE_GLOBAL_ARRAY(char_type, gWorkingDir_707F64, 256, 0x707F64);
-DEFINE_GLOBAL_INIT(bool, bDoFrontEnd_626B68, true, 0x626B68);
+EXTERN_GLOBAL(bool, bDoFrontEnd_626B68);
 
-DEFINE_GLOBAL(s32, window_width_706630, 0x706630);
-DEFINE_GLOBAL(s32, window_height_706B50, 0x706B50);
-DEFINE_GLOBAL(s32, full_width_706B5C, 0x706B5C);
-DEFINE_GLOBAL(s32, full_height_706798, 0x706798);
-DEFINE_GLOBAL(s32, gWindowX_706B60, 0x706B60);
-DEFINE_GLOBAL(s32, gWindowY_706B64, 0x706B64);
-DEFINE_GLOBAL(s32, bStartNetworkGame_7081F0, 0x7081F0);
-DEFINE_GLOBAL(BYTE, gMinimizedState_70827C, 0x70827C);
-DEFINE_GLOBAL(BYTE, bVideoModeResetPending_706C5D, 0x706C5D);
-DEFINE_GLOBAL(BYTE, bReplayMode_6F5B71, 0x6F5B71);
-DEFINE_GLOBAL_INIT(s32, gStartMode_626A0C, 2, 0x626A0C);
+EXTERN_GLOBAL(s32, window_width_706630);
+EXTERN_GLOBAL(s32, window_height_706B50);
+EXTERN_GLOBAL(s32, full_width_706B5C);
+EXTERN_GLOBAL(s32, full_height_706798);
+EXTERN_GLOBAL(s32, gWindowX_706B60);
+EXTERN_GLOBAL(s32, gWindowY_706B64);
+EXTERN_GLOBAL(s32, bStartNetworkGame_7081F0);
+EXTERN_GLOBAL(BYTE, gMinimizedState_70827C);
+EXTERN_GLOBAL(BYTE, bVideoModeResetPending_706C5D);
+EXTERN_GLOBAL(BYTE, bReplayMode_6F5B71);
+EXTERN_GLOBAL(s32, gStartMode_626A0C);
 
-DEFINE_GLOBAL(s32, bTrippleBuffer_706C54, 0x706C54);
-DEFINE_GLOBAL(char_type, bWindowedModeAvailable_706C5C, 0x706C5C);
-DEFINE_GLOBAL(u32, gBufferMode_706B34, 0x706B34);
+EXTERN_GLOBAL(s32, bTrippleBuffer_706C54);
+EXTERN_GLOBAL(char_type, bWindowedModeAvailable_706C5C);
+EXTERN_GLOBAL(u32, gBufferMode_706B34);
 DEFINE_GLOBAL_ARRAY(char_type, gRenderDllName_7067F0, 256, 0x7067F0);
 DEFINE_GLOBAL_ARRAY(char_type, gVideoDllName_706654, 256, 0x706654);
 DEFINE_GLOBAL(s32, gVideodevice_70694C, 0x70694C);
 DEFINE_GLOBAL(s32, gRenderdevice_706998, 0x706998);
 DEFINE_GLOBAL(u16, gDMusicVer_67BD32, 0x67BD32);
 
-DEFINE_GLOBAL_INIT(char_type, gLighting_626A09, 1, 0x626A09);
+EXTERN_GLOBAL(char_type, gLighting_626A09);
 
-DEFINE_GLOBAL(u32, gLightingDrawFlag_7068F4, 0x7068F4);
-DEFINE_GLOBAL(LPDIRECTINPUTDEVICEA, gMouseDevice_706C60, 0x706C60);
+EXTERN_GLOBAL(u32, gLightingDrawFlag_7068F4);
+EXTERN_GLOBAL(LPDIRECTINPUTDEVICEA, gMouseDevice_706C60);
 // The original mouse format uses the seven object records already recovered in Frontend.cpp.
 extern DIOBJECTDATAFORMAT gMouseObjectDataFormats_5EA3D0[7];
-DEFINE_GLOBAL_INIT(DIDATAFORMAT, gMouseDataFormat_601A84, {24u COMMA 16u COMMA DIDF_RELAXIS COMMA 16u COMMA 7u COMMA gMouseObjectDataFormats_5EA3D0}, 0x601A84);
+EXTERN_GLOBAL(DIDATAFORMAT, gMouseDataFormat_601A84);
 
-DEFINE_GLOBAL_INIT(u8, max_frame_rate_626A08, 1, 0x626A08);
-DEFINE_GLOBAL(u8, min_frame_rate_706C50, 0x706C50);
+EXTERN_GLOBAL(u8, max_frame_rate_626A08);
+EXTERN_GLOBAL(u8, min_frame_rate_706C50);
 
-DEFINE_GLOBAL(u8, gFramesSinceDraw_6F58D8, 0x6F58D8);
-DEFINE_GLOBAL(u8, bInputsPending_6F5760, 0x6F5760);
-DEFINE_GLOBAL(u8, bForceGameUpdate_6F5880, 0x6F5880);
+EXTERN_GLOBAL(u8, gFramesSinceDraw_6F58D8);
+EXTERN_GLOBAL(u8, bInputsPending_6F5760);
+EXTERN_GLOBAL(u8, bForceGameUpdate_6F5880);
 
 // TODO: move
 MATCH_FUNC(0x4DA820)

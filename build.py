@@ -250,7 +250,7 @@ def build_single_cpp(cpp_file: str):
             cwd=BUILD_DIRECTORY,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             shell=True
         )
     else:  # Windows
@@ -261,7 +261,7 @@ def build_single_cpp(cpp_file: str):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True
+            text=True, encoding="utf-8", errors="replace"
         )
         p1.stdin.write(f"set LIB={lib}\n")
         p1.stdin.write(f"set INCLUDE={include}\n")
@@ -339,8 +339,7 @@ def build_cmake(reccmp : bool, core_count_to_use : int, no_wip_logging : bool = 
             cwd=BUILD_DIRECTORY,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
-            shell=True,
+            text=True, encoding="utf-8", errors="replace",
             env=build_env
         )
     else:  # Windows
@@ -350,7 +349,7 @@ def build_cmake(reccmp : bool, core_count_to_use : int, no_wip_logging : bool = 
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             env=build_env
         )
         p1.stdin.write(f"set LIB={lib}\n")
@@ -405,7 +404,7 @@ def verify():
     python = sys.executable # should be the python venv
 
     dump_result = subprocess.run(f"{python} msvc_dump_new_data.py", cwd=BIN_COMP_DIRECTORY, shell=True)
-    compare_result = subprocess.run(f"{python} compare_all_functions.py", cwd=BIN_COMP_DIRECTORY, shell=True, capture_output=True, text=True)
+    compare_result = subprocess.run(f"{python} compare_all_functions.py", cwd=BIN_COMP_DIRECTORY, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     error_collection = CompileErrorCollection()
     for line in compare_result.stdout.splitlines():
