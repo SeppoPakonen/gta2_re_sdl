@@ -9,8 +9,10 @@
 #include "gbh_graphics.hpp"
 #include "hal/HalContext.hpp"
 #include "hal/IRenderer.hpp"
+#include "gtx_0x106C.hpp"
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 
 using gta2::hal::s32;
 using gta2::hal::u8;
@@ -28,6 +30,47 @@ T_gbh_DrawTriangle  pgbh_DrawTriangle  = nullptr;
 T_gbh_BeginScene    pgbh_BeginScene    = nullptr;
 T_gbh_EndScene      pgbh_EndScene      = nullptr;
 T_gbh_SetWindow     pgbh_SetWindow     = nullptr;
+
+T_gbh_InitDLL          pgbh_InitDLL          = nullptr;
+T_gbh_Init             pgbh_Init             = nullptr;
+T_gbh_CloseDLL         pgbh_CloseDLL         = nullptr;
+T_gbh_GetGlobals       pgbh_GetGlobals       = nullptr;
+T_gbh_DrawQuadClipped  pgbh_DrawQuadClipped  = nullptr;
+T_gbh_DrawFlatRect     pgbh_DrawFlatRect     = nullptr;
+T_gbh_PrintBitmap      pgbh_PrintBitmap      = nullptr;
+T_gbh_SetColourDepth   pgbh_SetColourDepth   = nullptr;
+T_gbh_Plot             pgbh_Plot             = nullptr;
+T_gbh_ConvertColour    pgbh_ConvertColour    = nullptr;
+T_gbh_RegisterTexture  pgbh_RegisterTexture  = nullptr;
+T_gbh_SetCamera        pgbh_SetCamera        = nullptr;
+T_gbh_ResetLights      pgbh_ResetLights      = nullptr;
+T_gbh_AddLight         pgbh_AddLight         = nullptr;
+T_gbh_SetAmbient       pgbh_SetAmbient       = nullptr;
+T_gbh_GetUsedCache     pgbh_GetUsedCache     = nullptr;
+T_gbh_FreeTexture      pgbh_FreeTexture      = nullptr;
+T_gbh_RegisterPalette  pgbh_RegisterPalette  = nullptr;
+T_gbh_FreePalette      pgbh_FreePalette      = nullptr;
+T_gbh_AssignPalette    pgbh_AssignPalette    = nullptr;
+T_gbh_LockTexture      pgbh_LockTexture      = nullptr;
+T_gbh_UnlockTexture    pgbh_UnlockTexture    = nullptr;
+T_gbh_BeginLevel       pgbh_BeginLevel       = nullptr;
+T_gbh_EndLevel         pgbh_EndLevel         = nullptr;
+
+T_MakeScreenTable      pMakeScreenTable      = nullptr;
+T_ConvertColourBank    pConvertColourBank    = nullptr;
+T_SetShadeTableA       pSetShadeTableA       = nullptr;
+
+T_gbh_InitImageTable   pgbh_InitImageTable   = nullptr;
+T_gbh_FreeImageTable   pgbh_FreeImageTable   = nullptr;
+T_gbh_LoadImage        pgbh_LoadImage        = nullptr;
+T_gbh_BlitImage        pgbh_BlitImage        = nullptr;
+T_gbh_BlitBuffer       pgbh_BlitBuffer       = nullptr;
+
+s32 gGBH_GraphicsLoaded_7085E0 = 1;
+
+static void Dummy_NoOp() {}
+static s32  Dummy_Zero() { return 0; }
+static void* Dummy_Null() { return nullptr; }
 
 static gta2::hal::TextureHandle Bridge_TextureHandle(STexture* pTexture) {
     if (!pTexture) {
@@ -93,6 +136,74 @@ static void Bridge_gbh_SetWindow(float left, float top, float right, float botto
     }
 }
 
+static STexture* Bridge_gbh_RegisterTexture(s32 width, s32 height, BYTE* pData, s32 pal_idx, char_type flag) {
+    STexture* tex = new STexture();
+    std::memset(tex, 0, sizeof(STexture));
+    tex->field_E_width = static_cast<u16>(width);
+    tex->field_10_height = static_cast<u16>(height);
+    tex->field_14_original_pixel_data_ptr = pData;
+    tex->field_4_pal_is_trans = static_cast<u16>(flag);
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (pRenderer) {
+        gta2::hal::TextureDesc desc{};
+        desc.width = static_cast<gta2::hal::u16>(width);
+        desc.height = static_cast<gta2::hal::u16>(height);
+        desc.bitsPerPixel = 8;
+        desc.pPixels = pData;
+        if (gGtx_0x106C_703DD4 && pal_idx >= 0) {
+            desc.pPalette = reinterpret_cast<const u16*>(gGtx_0x106C_703DD4->GetPalData_5AA6A0(static_cast<u16>(pal_idx)));
+        } else {
+            desc.pPalette = nullptr;
+        }
+        desc.bTransparent = (flag != 0);
+        gta2::hal::TextureHandle h = pRenderer->RegisterTexture(desc);
+        tex->field_0_id = static_cast<u16>(h);
+        tex->field_1C_ptr = reinterpret_cast<void*>(static_cast<std::uintptr_t>(h));
+    }
+    return tex;
+}
+
+static void Bridge_gbh_FreeTexture(STexture* pTexture) {
+    if (pTexture) {
+        gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+        gta2::hal::TextureHandle h = Bridge_TextureHandle(pTexture);
+        if (pRenderer && h != gta2::hal::kInvalidTextureHandle) {
+            pRenderer->UnregisterTexture(h);
+        }
+        delete pTexture;
+    }
+}
+
+static void* Bridge_gbh_LockTexture(STexture* pTexture) {
+    if (pTexture) {
+        pTexture->field_8_locked_pixels_ptr = pTexture->field_14_original_pixel_data_ptr;
+        return pTexture->field_8_locked_pixels_ptr;
+    }
+    return nullptr;
+}
+
+static STexture* Bridge_gbh_UnlockTexture(STexture* pTexture) {
+    if (pTexture) {
+        gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+        gta2::hal::TextureHandle h = Bridge_TextureHandle(pTexture);
+        if (pRenderer && h != gta2::hal::kInvalidTextureHandle && pTexture->field_14_original_pixel_data_ptr) {
+            pRenderer->UpdateTexture(h, pTexture->field_14_original_pixel_data_ptr, nullptr);
+        }
+    }
+    return pTexture;
+}
+
+static void Bridge_gbh_AssignPalette(STexture* pTexture, s32 palId) {
+    if (pTexture) {
+        pTexture->field_12_bPalIsValid = 1;
+        gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+        if (pRenderer && gGtx_0x106C_703DD4 && palId >= 0) {
+            const u16* pPal = reinterpret_cast<const u16*>(gGtx_0x106C_703DD4->GetPalData_5AA6A0(static_cast<u16>(palId)));
+            pRenderer->SetPalette(Bridge_TextureHandle(pTexture), pPal);
+        }
+    }
+}
+
 // Bind every pgbh_* pointer to its HAL bridge. Called by the modern engine
 // startup (EngineRunner) instead of GBH_GraphicsLoadDll_5EA680.
 void GBH_GraphicsInit_Modern() {
@@ -103,6 +214,41 @@ void GBH_GraphicsInit_Modern() {
     pgbh_BeginScene   = Bridge_gbh_BeginScene;
     pgbh_EndScene     = Bridge_gbh_EndScene;
     pgbh_SetWindow    = Bridge_gbh_SetWindow;
+    pgbh_RegisterTexture = Bridge_gbh_RegisterTexture;
+    pgbh_FreeTexture     = Bridge_gbh_FreeTexture;
+    pgbh_LockTexture     = reinterpret_cast<T_gbh_LockTexture>(Bridge_gbh_LockTexture);
+    pgbh_UnlockTexture   = Bridge_gbh_UnlockTexture;
+    pgbh_AssignPalette   = Bridge_gbh_AssignPalette;
+
+    pgbh_InitDLL          = reinterpret_cast<T_gbh_InitDLL>(Dummy_Zero);
+    pgbh_Init             = reinterpret_cast<T_gbh_Init>(Dummy_Zero);
+    pgbh_CloseDLL         = reinterpret_cast<T_gbh_CloseDLL>(Dummy_NoOp);
+    pgbh_GetGlobals       = reinterpret_cast<T_gbh_GetGlobals>(Dummy_Null);
+    pgbh_DrawQuadClipped  = reinterpret_cast<T_gbh_DrawQuadClipped>(Dummy_Zero);
+    pgbh_DrawFlatRect     = reinterpret_cast<T_gbh_DrawFlatRect>(Dummy_Zero);
+    pgbh_PrintBitmap      = reinterpret_cast<T_gbh_PrintBitmap>(Dummy_Zero);
+    pgbh_SetColourDepth   = reinterpret_cast<T_gbh_SetColourDepth>(Dummy_Zero);
+    pgbh_Plot             = reinterpret_cast<T_gbh_Plot>(Dummy_NoOp);
+    pgbh_ConvertColour    = reinterpret_cast<T_gbh_ConvertColour>(Dummy_Zero);
+    pgbh_SetCamera        = reinterpret_cast<T_gbh_SetCamera>(Dummy_NoOp);
+    pgbh_ResetLights      = reinterpret_cast<T_gbh_ResetLights>(Dummy_NoOp);
+    pgbh_AddLight         = reinterpret_cast<T_gbh_AddLight>(Dummy_Zero);
+    pgbh_SetAmbient       = reinterpret_cast<T_gbh_SetAmbient>(Dummy_NoOp);
+    pgbh_GetUsedCache     = reinterpret_cast<T_gbh_GetUsedCache>(Dummy_Zero);
+    pgbh_RegisterPalette  = reinterpret_cast<T_gbh_RegisterPalette>(Dummy_Zero);
+    pgbh_FreePalette      = reinterpret_cast<T_gbh_FreePalette>(Dummy_NoOp);
+    pgbh_BeginLevel       = reinterpret_cast<T_gbh_BeginLevel>(Dummy_Zero);
+    pgbh_EndLevel         = reinterpret_cast<T_gbh_EndLevel>(Dummy_NoOp);
+
+    pMakeScreenTable      = reinterpret_cast<T_MakeScreenTable>(Dummy_NoOp);
+    pConvertColourBank    = reinterpret_cast<T_ConvertColourBank>(Dummy_NoOp);
+    pSetShadeTableA       = reinterpret_cast<T_SetShadeTableA>(Dummy_NoOp);
+
+    pgbh_InitImageTable   = reinterpret_cast<T_gbh_InitImageTable>(Dummy_Zero);
+    pgbh_FreeImageTable   = reinterpret_cast<T_gbh_FreeImageTable>(Dummy_NoOp);
+    pgbh_LoadImage        = reinterpret_cast<T_gbh_LoadImage>(Dummy_Zero);
+    pgbh_BlitImage        = reinterpret_cast<T_gbh_BlitImage>(Dummy_Zero);
+    pgbh_BlitBuffer       = reinterpret_cast<T_gbh_BlitBuffer>(Dummy_Zero);
 }
 
 #else

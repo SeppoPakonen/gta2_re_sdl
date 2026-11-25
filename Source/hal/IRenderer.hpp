@@ -29,6 +29,8 @@ public:
     // Palette & Gamma
     virtual void SetPalette(TextureHandle texture, const u16* pPalette) = 0;
     virtual void SetGamma(f32 gamma) = 0;
+
+    virtual bool CaptureScreenshot(const char* ppmPath) { (void)ppmPath; return false; }
 };
 
 } // namespace gta2::hal

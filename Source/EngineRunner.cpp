@@ -1,14 +1,24 @@
 #include "EngineRunner.hpp"
 #include "hal/HalContext.hpp"
 #include "hal/VfsFileSystem.hpp"
+#include "hal/SDLWindowSystem.hpp"
+#include "hal/SDLEventSystem.hpp"
+#include "hal/SDLTimeSystem.hpp"
+#include "hal/OpenGLRenderer.hpp"
+#include "hal/SDLAudioBackend.hpp"
+#include "hal/SDLInputBackend.hpp"
+#include "GameLoop.hpp"
+#include "gbh_graphics.hpp"
+#include "dma_video.hpp"
 #include <cstdlib>
+#include <string>
+
+void GBH_GraphicsInit_Modern();
+EXTERN_GLOBAL(u8, bReplayMode_6F5B71);
 
 namespace gta2 {
 
 bool EngineRunner::Initialize(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
     auto& ctx = hal::GetHal();
     if (ctx.pFileSystem) {
         ctx.pFileSystem->Shutdown();
@@ -24,47 +34,54 @@ bool EngineRunner::Initialize(int argc, char** argv) {
     }
     ctx.pFileSystem = &vfs;
 
+    static hal::SDLTimeSystem timeSys;
+    static hal::SDLWindowSystem winSys;
+    static hal::SDLEventSystem evtSys;
+    static hal::OpenGLRenderer glRenderer;
+    static hal::SDLAudioBackend audioBackend;
+    static hal::SDLInputBackend inputBackend;
+
+    ctx.pTime = &timeSys;
+    ctx.pWindow = &winSys;
+    ctx.pEvents = &evtSys;
+    ctx.pRenderer = &glRenderer;
+    ctx.pAudio = &audioBackend;
+    ctx.pInput = &inputBackend;
+
+    // Check command line arguments for --demo or live mode
+    bReplayMode_6F5B71 = 1; // Default to attract demo mode for verification
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--nodemo" || arg == "--game") {
+            bReplayMode_6F5B71 = 0;
+        } else if (arg == "--demo") {
+            bReplayMode_6F5B71 = 1;
+        }
+    }
+
+    // Initialize window and graphics
+    if (winSys.Initialize("GTA2 Modern SDL", 640, 480, false)) {
+        glRenderer.SetProcLoader(reinterpret_cast<void*(*)(const char*)>(SDL_GL_GetProcAddress));
+        glRenderer.Initialize(&winSys);
+    }
+    DMA_Video_LoadDll_5EB970(nullptr);
+    GBH_GraphicsInit_Modern();
+
+    // Start the game simulation via the modern game loop.
+    GameLoop_Initialize();
+
     mIsRunning = true;
-    mInFrontend = true;
+    mInFrontend = false;
     return true;
 }
 
 bool EngineRunner::StepFrame() {
-    auto& ctx = hal::GetHal();
-
-    // 1. Process OS events
-    if (ctx.pEvents) {
-        ctx.pEvents->PumpEvents();
-        if (ctx.pEvents->ShouldQuit()) {
-            return false;
-        }
-    }
-
-    // 2. Update input & audio
-    if (ctx.pInput) {
-        ctx.pInput->Update();
-    }
-    if (ctx.pAudio) {
-        ctx.pAudio->Update();
-    }
-
-    // 3. Render and simulate frame
-    if (mInFrontend) {
-        // Run Frontend menu frame
-    } else {
-        // RunGameFrame_4DA850();
-    }
-
-    // 4. Swap display buffers
-    if (ctx.pWindow) {
-        ctx.pWindow->SwapBuffers();
-    }
-
-    return mIsRunning;
+    return GameLoop_StepFrame();
 }
 
 void EngineRunner::Shutdown() {
     mIsRunning = false;
+    hal::GetHal().Shutdown();
 }
 
 } // namespace gta2

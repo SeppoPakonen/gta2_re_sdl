@@ -150,7 +150,6 @@ std::string VfsFileSystem::ResolvePath(const char* virtualPath) {
             if (!found) {
                 current /= partStr;
                 resolvedAll = false;
-                break;
             }
         }
 

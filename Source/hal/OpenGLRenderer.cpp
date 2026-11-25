@@ -1,8 +1,11 @@
 #include "OpenGLRenderer.hpp"
 #include "IWindowSystem.hpp"
+#include "PaletteManager.hpp"
 
 #include <cstring>
 #include <cstddef>
+#include <cstdio>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Minimal OpenGL declarations.
@@ -56,6 +59,8 @@ constexpr GLenum GL_DEPTH_TEST = 0x0B71;
 constexpr GLenum GL_CULL_FACE = 0x0B44;
 constexpr GLbitfield GL_COLOR_BUFFER_BIT = 0x00004000;
 constexpr GLenum GL_UNPACK_ALIGNMENT = 0x0CF5;
+constexpr GLenum GL_PACK_ALIGNMENT = 0x0D05;
+constexpr GLenum GL_RGB = 0x1907;
 
 // GL entry points (resolved at runtime).
 struct GLFunctions {
@@ -67,6 +72,7 @@ struct GLFunctions {
     void (*glTexParameteri)(GLenum, GLenum, GLint);
     void (*glActiveTexture)(GLenum);
     void (*glPixelStorei)(GLenum, GLint);
+    void (*glReadPixels)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void*);
 
     void (*glGenBuffers)(GLsizei, GLuint*);
     void (*glDeleteBuffers)(GLsizei, const GLuint*);
@@ -129,7 +135,9 @@ const char* const kVertexShaderSrc =
     "}\n";
 
 const char* const kFragmentShaderSrc =
+    "#ifdef GL_ES\n"
     "precision mediump float;\n"
+    "#endif\n"
     "varying vec4 v_color;\n"
     "varying vec2 v_texCoord;\n"
     "uniform sampler2D u_texture;\n"
@@ -153,6 +161,7 @@ bool LoadAllGL() {
     LoadProc(g_gl.glTexParameteri, "glTexParameteri");
     LoadProc(g_gl.glActiveTexture, "glActiveTexture");
     LoadProc(g_gl.glPixelStorei, "glPixelStorei");
+    LoadProc(g_gl.glReadPixels, "glReadPixels");
 
     LoadProc(g_gl.glGenBuffers, "glGenBuffers");
     LoadProc(g_gl.glDeleteBuffers, "glDeleteBuffers");
@@ -202,6 +211,12 @@ GLuint CompileShader(GLenum type, const char* src) {
     GLint status = 0;
     g_gl.glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status == 0) {
+        char infoLog[1024] = {};
+        GLsizei logLen = 0;
+        if (g_gl.glGetShaderInfoLog) {
+            g_gl.glGetShaderInfoLog(shader, sizeof(infoLog), &logLen, infoLog);
+        }
+        std::fprintf(stderr, "[OpenGL] Shader compilation failed (type 0x%X): %s\n", type, infoLog);
         g_gl.glDeleteShader(shader);
         return 0;
     }
@@ -270,7 +285,7 @@ void OpenGLRenderer::Shutdown() {
         return;
     }
     for (auto& entry : mTextures) {
-        g_gl.glDeleteTextures(1, &entry.second);
+        g_gl.glDeleteTextures(1, &entry.second.glId);
     }
     mTextures.clear();
     if (mVbo) {
@@ -350,7 +365,7 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
     }
     if (hasTexture) {
         g_gl.glActiveTexture(GL_TEXTURE0);
-        g_gl.glBindTexture(GL_TEXTURE_2D, it->second);
+        g_gl.glBindTexture(GL_TEXTURE_2D, it->second.glId);
     } else {
         g_gl.glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -401,16 +416,43 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     g_gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     g_gl.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    const void* uploadPixels = desc.pPixels;
+    std::vector<u32> rgbaBuffer;
+    if (desc.pPixels && desc.bitsPerPixel == 8) {
+        const size_t pixelCount = static_cast<size_t>(desc.width) * desc.height;
+        rgbaBuffer.resize(pixelCount);
+        if (desc.pPalette) {
+            Expand8BitTo32Bit(static_cast<const u8*>(desc.pPixels), desc.pPalette,
+                             rgbaBuffer.data(), pixelCount, desc.bTransparent);
+        } else {
+            const u8* src = static_cast<const u8*>(desc.pPixels);
+            for (size_t i = 0; i < pixelCount; ++i) {
+                u8 val = src[i];
+                rgbaBuffer[i] = (val == 0 && desc.bTransparent) ? 0 : (0xFF000000 | (val << 16) | (val << 8) | val);
+            }
+        }
+        uploadPixels = rgbaBuffer.data();
+    }
+
     g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                       static_cast<GLsizei>(desc.width), static_cast<GLsizei>(desc.height), 0,
-                      GL_RGBA, GL_UNSIGNED_BYTE, desc.pPixels);
+                      GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
 
     const TextureHandle handle = mNextTextureHandle++;
-    mTextures[handle] = id;
+    TexInfo info{};
+    info.glId = id;
+    info.width = desc.width;
+    info.height = desc.height;
+    info.bitsPerPixel = desc.bitsPerPixel;
+    info.bTransparent = desc.bTransparent;
+    info.pPalette = desc.pPalette;
+    info.pPixels = desc.pPixels;
+    mTextures[handle] = info;
     return handle;
 }
 
-void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, const u16* /*pPalette*/) {
+void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, const u16* pPalette) {
     if (!mReady) {
         return;
     }
@@ -418,12 +460,37 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     if (it == mTextures.end()) {
         return;
     }
-    g_gl.glBindTexture(GL_TEXTURE_2D, it->second);
+    TexInfo& info = it->second;
+    if (pPixels) {
+        info.pPixels = pPixels;
+    }
+    if (pPalette) {
+        info.pPalette = pPalette;
+    }
+    g_gl.glBindTexture(GL_TEXTURE_2D, info.glId);
     g_gl.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    // Sub-image upload requires the dimensions, which we do not track here; a
-    // full re-specification via RegisterTexture is the common path. Callers that
-    // need partial updates should re-register. As a safe fallback, no-op.
-    (void)pPixels;
+
+    const void* uploadPixels = info.pPixels;
+    std::vector<u32> rgbaBuffer;
+    if (info.pPixels && info.bitsPerPixel == 8) {
+        const size_t pixelCount = static_cast<size_t>(info.width) * info.height;
+        rgbaBuffer.resize(pixelCount);
+        if (info.pPalette) {
+            Expand8BitTo32Bit(static_cast<const u8*>(info.pPixels), info.pPalette,
+                             rgbaBuffer.data(), pixelCount, info.bTransparent);
+        } else {
+            const u8* src = static_cast<const u8*>(info.pPixels);
+            for (size_t i = 0; i < pixelCount; ++i) {
+                u8 val = src[i];
+                rgbaBuffer[i] = (val == 0 && info.bTransparent) ? 0 : (0xFF000000 | (val << 16) | (val << 8) | val);
+            }
+        }
+        uploadPixels = rgbaBuffer.data();
+    }
+
+    g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                      static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height), 0,
+                      GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
 }
 
 void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {
@@ -432,20 +499,58 @@ void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {
         return;
     }
     if (mReady) {
-        GLuint id = it->second;
+        GLuint id = it->second.glId;
         g_gl.glDeleteTextures(1, &id);
     }
     mTextures.erase(it);
 }
 
-void OpenGLRenderer::SetPalette(TextureHandle /*texture*/, const u16* /*pPalette*/) {
-    // Palettes are expanded to RGBA at RegisterTexture time in this renderer.
+void OpenGLRenderer::SetPalette(TextureHandle texture, const u16* pPalette) {
+    if (!mReady || !pPalette) {
+        return;
+    }
+    auto it = mTextures.find(texture);
+    if (it == mTextures.end()) {
+        return;
+    }
+    UpdateTexture(texture, it->second.pPixels, pPalette);
 }
 
 void OpenGLRenderer::SetGamma(f32 gamma) {
     // Gamma correction is not applied in the shader path yet; accepted for API
     // compatibility. A future revision can fold it into the fragment shader.
     (void)gamma;
+}
+
+bool OpenGLRenderer::CaptureScreenshot(const char* ppmPath) {
+    if (!mReady || !mWindow || !g_gl.glReadPixels) {
+        std::fprintf(stderr, "[Screenshot] FAILED: mReady=%d, mWindow=%p, glReadPixels=%p\n",
+                     mReady ? 1 : 0, static_cast<void*>(mWindow), reinterpret_cast<void*>(g_gl.glReadPixels));
+        return false;
+    }
+    s32 w = 640, h = 480;
+    mWindow->GetWindowSize(w, h);
+    if (w <= 0 || h <= 0) {
+        return false;
+    }
+    std::vector<u8> pixels(static_cast<size_t>(w) * h * 3);
+    g_gl.glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    g_gl.glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+
+    FILE* fp = std::fopen(ppmPath, "wb");
+    if (!fp) {
+        std::fprintf(stderr, "[Screenshot] FAILED: fopen('%s') failed\n", ppmPath);
+        return false;
+    }
+    std::fprintf(fp, "P6\n%d %d\n255\n", w, h);
+    // glReadPixels reads bottom-to-top; flip vertically for PPM
+    const size_t rowBytes = static_cast<size_t>(w) * 3;
+    for (int y = h - 1; y >= 0; --y) {
+        std::fwrite(&pixels[static_cast<size_t>(y) * rowBytes], 1, rowBytes, fp);
+    }
+    std::fclose(fp);
+    std::fprintf(stderr, "[Screenshot] Captured %dx%d to %s\n", w, h, ppmPath);
+    return true;
 }
 
 } // namespace gta2::hal

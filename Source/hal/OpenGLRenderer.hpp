@@ -32,6 +32,8 @@ public:
     void SetPalette(TextureHandle texture, const u16* pPalette) override;
     void SetGamma(f32 gamma) override;
 
+    bool CaptureScreenshot(const char* ppmPath) override;
+
     // Provide the GL entry-point resolver (e.g. SDL_GL_GetProcAddress). Must be
     // called after the GL context is current and before Initialize/rendering.
     static void SetProcLoader(void* (*pLoader)(const char* name));
@@ -53,7 +55,16 @@ private:
 
     unsigned int mVbo = 0;
 
-    std::unordered_map<TextureHandle, unsigned int> mTextures;
+    struct TexInfo {
+        unsigned int glId = 0;
+        u16 width = 0;
+        u16 height = 0;
+        u8 bitsPerPixel = 0;
+        bool bTransparent = false;
+        const u16* pPalette = nullptr;
+        const void* pPixels = nullptr;
+    };
+    std::unordered_map<TextureHandle, TexInfo> mTextures;
     TextureHandle mNextTextureHandle = 1;
 };
 

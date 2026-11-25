@@ -55,6 +55,7 @@ android/.gradle/
 android/app/build/
 
 # Local build/asset dirs (not committed)
-build_debug/
+build_debug*/
 assets/
 crash_reports/
+player/

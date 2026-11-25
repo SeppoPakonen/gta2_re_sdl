@@ -286,6 +286,10 @@ STexture* TextureCache::GetDigitTexture_5B95F0(u16 idx, u16 row_offset, u16 heig
 {
     DigitTexture* pDigit = &field_10C4_digit_textures[idx];
     STexture* pTexture = pDigit->field_4_pTexture;
+    if (!pTexture)
+    {
+        return nullptr;
+    }
 
     if (height != pDigit->field_8_height || row_offset != pDigit->field_A_row_offset)
     {

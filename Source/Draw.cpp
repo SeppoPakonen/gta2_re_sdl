@@ -32,6 +32,10 @@ DEFINE_GLOBAL(DWORD, gWindowBottom_70679C, 0x70679C);
 MATCH_FUNC(0x495470)
 void __stdcall DrawTextureScaled_495470(STexture* pTexture, Fix16 x_pos, Fix16 y_pos, u8 width, u8 height, Ang16 rotation, s32 alpha_value, u8 alpha_flag)
 {
+    if (!pTexture)
+    {
+        return;
+    }
     DrawTexture_5D8470(pTexture,
                x_pos * gViewCamera_676978->field_A8_ui_scale,
                y_pos * gViewCamera_676978->field_A8_ui_scale,

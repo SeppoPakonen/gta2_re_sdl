@@ -70,14 +70,56 @@ typedef double f64;
     #ifndef __declspec
         #define __declspec(x)
     #endif
+#include <cwchar>
+#include <wchar.h>
+#include <cstdio>
+#include <cstdarg>
+
+#if !defined(_WIN32)
+    inline size_t gta2_wcslen(const wchar_t* s) {
+        if (!s) return 0;
+        const wchar_t* p = s;
+        while (*p) p++;
+        return p - s;
+    }
+    inline wchar_t* gta2_wcscpy(wchar_t* dest, const wchar_t* src) {
+        if (!dest || !src) return dest;
+        wchar_t* d = dest;
+        while ((*d++ = *src++));
+        return dest;
+    }
+    inline wchar_t* gta2_wcsncpy(wchar_t* dest, const wchar_t* src, size_t n) {
+        if (!dest || !src) return dest;
+        wchar_t* d = dest;
+        while (n && (*d++ = *src++)) n--;
+        while (n--) *d++ = 0;
+        return dest;
+    }
+    inline int gta2_wcscmp(const wchar_t* s1, const wchar_t* s2) {
+        if (!s1 || !s2) return (s1 == s2) ? 0 : (s1 ? 1 : -1);
+        while (*s1 && (*s1 == *s2)) { s1++; s2++; }
+        return static_cast<int>(*s1) - static_cast<int>(*s2);
+    }
+    inline int gta2_wcsncmp(const wchar_t* s1, const wchar_t* s2, size_t n) {
+        if (!s1 || !s2) return (s1 == s2) ? 0 : (s1 ? 1 : -1);
+        while (n && *s1 && (*s1 == *s2)) { s1++; s2++; n--; }
+        if (n == 0) return 0;
+        return static_cast<int>(*s1) - static_cast<int>(*s2);
+    }
+
+    #define wcslen gta2_wcslen
+    #define wcscpy gta2_wcscpy
+    #define wcsncpy gta2_wcsncpy
+    #define wcscmp gta2_wcscmp
+    #define wcsncmp gta2_wcsncmp
+
     #ifndef swprintf
-        #include <cwchar>
         #define swprintf(buf, ...) swprintf(buf, 1024, __VA_ARGS__)
     #endif
     #ifndef vswprintf
-        #include <cwchar>
         #define vswprintf(buf, fmt, args) vswprintf(buf, 1024, fmt, args)
     #endif
+#endif
     #ifndef wsprintfA
         #include <cstdio>
         #define wsprintfA sprintf

@@ -1,9 +1,11 @@
 #include "crt_stubs.hpp"
 #include "Function.hpp"
 #include <memory>
+#include <cstring>
 #if defined(GTA2_MODERN_BUILD)
     #include "hal/HalContext.hpp"
     #include <string>
+    #include <filesystem>
 #endif
 
 namespace crt
@@ -45,6 +47,16 @@ FILE* __cdecl fopen(const char* FileName, const char* Mode)
     if (gta2::hal::GetHal().pFileSystem)
     {
         std::string resolved = gta2::hal::GetHal().pFileSystem->ResolvePath(FileName);
+        bool isWrite = Mode && (std::strchr(Mode, 'w') || std::strchr(Mode, 'a') || std::strchr(Mode, '+'));
+        if (isWrite)
+        {
+            std::error_code ec;
+            std::filesystem::path p(resolved);
+            if (p.has_parent_path())
+            {
+                std::filesystem::create_directories(p.parent_path(), ec);
+            }
+        }
         return ::fopen(resolved.c_str(), Mode);
     }
 #endif

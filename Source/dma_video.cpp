@@ -10,6 +10,7 @@
 #include <cstdint>
 
 using gta2::hal::s32;
+using gta2::hal::u8;
 using gta2::hal::f32;
 
 // Minimal, layout-compatible mirror of the legacy SVideo (see DmaVideo.hpp).
@@ -28,12 +29,18 @@ struct SVideo {
 using T_Vid_SetMode = s32 (*)(SVideo* pVideoDriver, void* hWnd, s32 modeId);
 using T_Vid_FlipBuffers = void (*)(SVideo* pVideo);
 using T_Vid_SetGamma = s32 (*)(SVideo* pVideoDriver, f32 a2, f32 a3, f32 a4);
+using T_Vid_GetSurface = s32 (*)(SVideo*);
+using T_Vid_FreeSurface = void (*)(SVideo*);
+using T_Vid_ClearScreen = s32 (*)(SVideo*, u8, u8, u8, s32, s32, s32, s32);
 
 SVideo* gVidSys_7071D0 = nullptr;
 
 T_Vid_SetMode     pVid_SetMode     = nullptr;
 T_Vid_FlipBuffers pVid_FlipBuffers = nullptr;
 T_Vid_SetGamma    pVid_SetGamma    = nullptr;
+T_Vid_GetSurface  pVid_GetSurface  = nullptr;
+T_Vid_FreeSurface pVid_FreeSurface = nullptr;
+T_Vid_ClearScreen pVid_ClearScreen = nullptr;
 
 static SVideo sModernVideoSys{};
 
@@ -68,15 +75,24 @@ static s32 Bridge_pVid_SetGamma(SVideo* /*pVid*/, f32 r, f32 g, f32 b) {
     return 0;
 }
 
+static s32 Dummy_ClearScreen(SVideo*, u8, u8, u8, s32, s32, s32, s32) { return 0; }
+static void Dummy_FreeSurface(SVideo*) {}
+static s32 Dummy_GetSurface(SVideo*) { return 0; }
+
 s32 DMA_Video_LoadDll_5EB970(const char* /*lpLibFileName*/)
 {
     // Under the modern build we never load the Windows DirectDraw DLL; route the
     // video entry points through the HAL instead and expose a dummy SVideo so
     // legacy code reading gVidSys_7071D0 fields stays safe.
+    sModernVideoSys.field_8_found_width = 640;
+    sModernVideoSys.field_C_found_height = 480;
     gVidSys_7071D0 = &sModernVideoSys;
     pVid_SetMode = Bridge_pVid_SetMode;
     pVid_FlipBuffers = Bridge_pVid_FlipBuffers;
     pVid_SetGamma = Bridge_pVid_SetGamma;
+    pVid_ClearScreen = Dummy_ClearScreen;
+    pVid_FreeSurface = Dummy_FreeSurface;
+    pVid_GetSurface = Dummy_GetSurface;
     return 0;
 }
 

@@ -2,6 +2,7 @@
 #include "Function.hpp"
 #include "Globals.hpp"
 #include "error.hpp"
+#include "crt_stubs.hpp"
 #include <stdlib.h>
 #if !defined(GTA2_MODERN_BUILD)
 #include <windows.h>
@@ -112,7 +113,7 @@ void KeyboardLayout::LoadKbCfg_4D5E00()
             break;
     }
 
-    FILE* hConfigFile = fopen(FileName, "rt");
+    FILE* hConfigFile = crt::fopen(FileName, "rt");
     if (!hConfigFile)
     {
         FatalError_4A38C0(Gta2Error::KeyboardTypeFileOpenError, "C:\\Splitting\\Gta2\\Source\\keybrd.cpp", 187);
@@ -136,7 +137,7 @@ void KeyboardLayout::LoadKbCfg_4D5E00()
         }
     }
 
-    fclose(hConfigFile);
+    crt::fclose(hConfigFile);
 }
 
 MATCH_FUNC(0x4D5F40)

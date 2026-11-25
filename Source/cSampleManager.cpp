@@ -114,6 +114,81 @@ const voc_name gVocNames_5FEA5C[98] = {{"accuracyb.wav"},
                                        {"laughc.wav"},
                                        {"laughd.wav"}};
 
+#if defined(GTA2_MODERN_BUILD)
+cSampleManager::cSampleManager()
+{
+    field_1EA8_pAudioBuffer1 = nullptr;
+    field_1EAC_pAudioBuffer2 = nullptr;
+    for (s32 k = 0; k < 16; k++) {
+        field_58_hSamples[k] = nullptr;
+    }
+    for (s32 j = 0; j < 2; j++) {
+        field_9C_hStreams[j] = nullptr;
+    }
+}
+s32 cSampleManager::GetPlayBackRate_58DBF0(int) const { return 22050; }
+void cSampleManager::SetVocalVolume_58E6D0(int, unsigned char) {}
+s32 cSampleManager::GetVocalPosMs_58E770(long) const { return 0; }
+void cSampleManager::CloseVocalStream_58E6A0(int) {}
+void cSampleManager::PlayVocal_58E510(int, int, bool) {}
+s32 cSampleManager::GetVocalLengthMs_58E7A0(long) const { return 0; }
+void cSampleManager::SetVocalPosMs_58E750(int, int) {}
+s32 cSampleManager::GetVocalSpeed_58E720(s32) const { return 22050; }
+void cSampleManager::SetVocalSpeed_58E700(s32, s32) {}
+
+bool cSampleManager::DisableA3DSplash_58D620() { return true; }
+bool cSampleManager::OpenDigitalDriver_58D720(bool, bool, s32) { return true; }
+bool cSampleManager::AllocSamples_58D9F0(s32) { return true; }
+bool cSampleManager::Init3DProvider_58D820(u8*) { return true; }
+void cSampleManager::Reset3DSamples_58D960() {}
+void cSampleManager::AllocSample_58DA80() {}
+void cSampleManager::ReleaseSample_58DAC0() {}
+void cSampleManager::Terminate_58DAE0() {}
+void cSampleManager::Shutdown_58DB30() {}
+s32  cSampleManager::GetRandomDisplacement_58DC10(s32) const { return 0; }
+s32  cSampleManager::GetLoopStart_58DC30(s32) const { return 0; }
+s32  cSampleManager::GetLoopEnd_58DC50(s32) const { return 0; }
+s32  cSampleManager::GetSampleLength_58DC70(s32) const { return 0; }
+void cSampleManager::InitialiseChannel_58DC90(s32, s32) {}
+void cSampleManager::SetChannelVolume_58DCE0(s32, s32) {}
+void cSampleManager::SetChannelPan_58DD00(s32, s32) {}
+void cSampleManager::SetChannelFrequency_58DD20(s32, s32) {}
+void cSampleManager::SetChannelLoopPoints_58DD40(s32, s32, s32) {}
+void cSampleManager::SetChannelLoopCount_58DD60(s32, s32) {}
+bool cSampleManager::GetChannelUsedFlag_58DD80(s32) const { return false; }
+void cSampleManager::StartChannel_58DDB0(s32) {}
+void cSampleManager::StopChannel_58DDD0(s32) {}
+bool cSampleManager::InitialiseChannel3D_58DDF0(s32, s32, s32) { return false; }
+void cSampleManager::SetChannel3DVolume_58DE80(s32, s32) {}
+void cSampleManager::SetChannel3DPosition_58DEA0(s32, f32, f32, f32) {}
+void cSampleManager::SetChannel3DDistances_58DED0(s32, f32, f32) {}
+void cSampleManager::SetChannel3DFrequency_58DF00(s32, s32) {}
+void cSampleManager::SetChannel3DLoopPoints_58DF20(s32, s32, s32) {}
+void cSampleManager::SetChannel3DLoopCount_58DF50(s32, s32) {}
+bool cSampleManager::GetChannel3DUsedFlag_58DF70(s32) const { return false; }
+void cSampleManager::StartChannel3D_58DFA0(s32) {}
+void cSampleManager::StopChannel3D_58DFC0(s32) {}
+u8   cSampleManager::Get3DSampleCount_58E000() const { return 0; }
+void cSampleManager::SetEaxEnvironment_58E010(s32) {}
+bool cSampleManager::Open3DProvider_58E140(s32) { return false; }
+void cSampleManager::Close3DProvider_58E1C0() {}
+void cSampleManager::Enum3DProviders_58E1F0() {}
+bool cSampleManager::StreamStatus_58E2C0() const { return false; }
+void cSampleManager::StreamSetVolume_58E2F0(u8) {}
+void cSampleManager::OpenStream_58E320(u32) {}
+void cSampleManager::CloseStream_58E460() {}
+void cSampleManager::FadeOut_58E490() {}
+bool cSampleManager::MusicFileExists_58E500() const { return false; }
+void cSampleManager::SetSampleVol_58E7D0(u8) {}
+void cSampleManager::PlayAtIdx_58E7F0(s32) {}
+bool cSampleManager::SampleNotDone_58E880() const { return false; }
+void cSampleManager::EndSample_58E8A0() {}
+void cSampleManager::EndSample_58E960() {}
+bool cSampleManager::LoadWavSdtData_58E980(const char_type*) { return true; }
+bool cSampleManager::Reacquire_58E2A0() { return true; }
+void cSampleManager::Release_58E290() {}
+#endif
+
 #if !defined(GTA2_MODERN_BUILD)
 MATCH_FUNC(0x58D430)
 cSampleManager::cSampleManager()
