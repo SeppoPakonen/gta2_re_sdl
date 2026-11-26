@@ -225,14 +225,16 @@ static s32 Bridge_gbh_BlitImage(s32 image_idx, s32 src_left, s32 src_top, s32 sr
     f32 u1 = static_cast<f32>(src_right);
     f32 v0 = static_cast<f32>(src_bottom);
     f32 v1 = static_cast<f32>(src_top);
+    // Perimeter order (TL, TR, BR, BL) for GL_TRIANGLE_FAN; a Z-order
+    // (TL,TR,BL,BR) makes the fan a bow-tie and leaves black triangles.
     verts[0].x = static_cast<f32>(dst_x); verts[0].y = static_cast<f32>(dst_y);
     verts[0].z = 0.0f; verts[0].w = 1.0f; verts[0].u = u0; verts[0].v = v0;
     verts[1].x = static_cast<f32>(dst_x + src_right - src_left); verts[1].y = static_cast<f32>(dst_y);
     verts[1].z = 0.0f; verts[1].w = 1.0f; verts[1].u = u1; verts[1].v = v0;
-    verts[2].x = static_cast<f32>(dst_x); verts[2].y = static_cast<f32>(dst_y + src_bottom - src_top);
-    verts[2].z = 0.0f; verts[2].w = 1.0f; verts[2].u = u0; verts[2].v = v1;
-    verts[3].x = static_cast<f32>(dst_x + src_right - src_left); verts[3].y = static_cast<f32>(dst_y + src_bottom - src_top);
-    verts[3].z = 0.0f; verts[3].w = 1.0f; verts[3].u = u1; verts[3].v = v1;
+    verts[2].x = static_cast<f32>(dst_x + src_right - src_left); verts[2].y = static_cast<f32>(dst_y + src_bottom - src_top);
+    verts[2].z = 0.0f; verts[2].w = 1.0f; verts[2].u = u1; verts[2].v = v1;
+    verts[3].x = static_cast<f32>(dst_x); verts[3].y = static_cast<f32>(dst_y + src_bottom - src_top);
+    verts[3].z = 0.0f; verts[3].w = 1.0f; verts[3].u = u0; verts[3].v = v1;
     // Vertex diffuse/specular colours must be initialised; the shader multiplies
     // the texture by the vertex colour, so leaving them as stack garbage renders
     // the image black.
