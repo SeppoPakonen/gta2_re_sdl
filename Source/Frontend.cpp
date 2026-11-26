@@ -3107,6 +3107,13 @@ void Frontend::Render_4ADFB0()
     if (field_EE08_menu_screen != GameOver_13 && field_EE08_menu_screen != RedBar_16 && field_EE08_menu_screen != BlueBar_14 && field_EE08_menu_screen != Loading_15 && field_EE08_menu_screen != HiScoresDisplay_12 && field_EE08_menu_screen != Credits_17)
     {
         DrawBackground_4B6E10();
+#if defined(GTA2_MODERN_BUILD)
+        // The 2D TGA background is drawn here; the original menu also renders the
+        // dynamic option text (DrawMenu) over it. DrawCurrentState is otherwise
+        // only reached for the special overlay screens, so call it for the normal
+        // menu too to draw the labels.
+        DrawCurrentState_4ADF50();
+#endif
     }
     else
     {

@@ -92,9 +92,9 @@ typedef double f64;
     }
     inline wchar_t* gta2_wcsncpy(wchar_t* dest, const wchar_t* src, size_t n) {
         if (!dest || !src) return dest;
-        wchar_t* d = dest;
-        while (n && (*d++ = *src++)) n--;
-        while (n--) *d++ = 0;
+        size_t i = 0;
+        for (; i < n && src[i]; i++) dest[i] = src[i];
+        for (; i < n; i++) dest[i] = 0;
         return dest;
     }
     inline int gta2_wcscmp(const wchar_t* s1, const wchar_t* s2) {
