@@ -508,7 +508,7 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
         const size_t pixelCount = static_cast<size_t>(desc.width) * desc.height;
         rgbaBuffer.resize(pixelCount);
         const u8* src = static_cast<const u8*>(desc.pPixels);
-        const size_t srcStride = (desc.width <= 256) ? 256 : desc.width;
+        const size_t srcStride = desc.width;
 
         for (u16 y = 0; y < desc.height; ++y) {
             const u8* srcRow = src + static_cast<size_t>(y) * srcStride;
