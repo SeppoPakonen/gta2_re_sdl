@@ -411,7 +411,7 @@ void gtx_0x106C::load_delx_5AAB30(u32 delx_chunk_size)
     for (; off < delx_chunk_size;)
     {
         u32 size = 2 * pIter->field_2_delta_count + 4;
-        field_60_delta_len += 8 * pIter->field_2_delta_count + 4;
+        field_60_delta_len += offsetof(sprite_deltas, field_4_deltas[0]) + pIter->field_2_delta_count * sizeof(sprite_delta);
         pIter = reinterpret_cast<delta_entry*>(reinterpret_cast<u8*>(pIter) + size);
         off += size;
     }
@@ -435,7 +435,7 @@ void gtx_0x106C::load_delx_5AAB30(u32 delx_chunk_size)
         }
 
         u32 size = 2 * pSrc->field_2_delta_count + 4;
-        pDst = reinterpret_cast<sprite_deltas*>(reinterpret_cast<u8*>(pDst) + 8 * pDst->field_2_count + 4);
+        pDst = reinterpret_cast<sprite_deltas*>(reinterpret_cast<u8*>(pDst) + offsetof(sprite_deltas, field_4_deltas[0]) + pDst->field_2_count * sizeof(sprite_delta));
         off2 += size;
         pSrc = reinterpret_cast<delta_entry*>(reinterpret_cast<u8*>(pSrc) + size);
     }
@@ -454,7 +454,7 @@ void gtx_0x106C::SetDeltaDataPtrs_5AABF0()
         {
             *reinterpret_cast<u32*>(&pEntry->field_4_delta[4 * delta_idx]) += *reinterpret_cast<u32*>(&field_48_delta_store); // TODO: fix me
         }
-        size = 8 * pEntry->field_2_delta_count + 4;
+        size = offsetof(sprite_deltas, field_4_deltas[0]) + pEntry->field_2_delta_count * sizeof(sprite_delta);
         pEntry = reinterpret_cast<delta_entry*>(reinterpret_cast<char_type*>(pEntry) + size);
     }
 }
@@ -484,12 +484,12 @@ void gtx_0x106C::build_delta_container_5AAC70()
             maxSprite = pIter->field_0_which_sprite;
         }
 
-        u32 size = 8 * pIter->field_2_count + 4;
+        u32 size = offsetof(sprite_deltas, field_4_deltas[0]) + pIter->field_2_count * sizeof(sprite_delta);
         off += size;
         pIter = reinterpret_cast<sprite_deltas*>(reinterpret_cast<u8*>(pIter) + size);
     }
 
-    field_54_del = static_cast<delta_container*>(Memory::malloc_4FE4D0(4 * maxSprite + 8));
+    field_54_del = static_cast<delta_container*>(Memory::malloc_4FE4D0(offsetof(delta_container, field_4_entries[0]) + (maxSprite + 1) * sizeof(sprite_deltas*)));
     field_54_del->field_0_count = maxSprite + 1;
 
     for (u32 i = 0; i < field_54_del->field_0_count; i++)
@@ -513,7 +513,7 @@ void gtx_0x106C::build_delta_container_5AAC70()
             maxSprite = pIter->field_0_which_sprite;
         }
 
-        u32 size = 8 * pIter->field_2_count + 4;
+        u32 size = offsetof(sprite_deltas, field_4_deltas[0]) + pIter->field_2_count * sizeof(sprite_delta);
         pIter = reinterpret_cast<sprite_deltas*>(reinterpret_cast<u8*>(pIter) + size);
         off2 += size;
     }

@@ -4543,7 +4543,7 @@ void Map_0x370::build_zone_list_4E90E0(u32 chunk_size)
         in_use_size += zone_data_size;
         pZone = reinterpret_cast<gmp_map_zone*>(reinterpret_cast<u8*>(pZone) + zone_data_size);
     }
-    field_32C_pZones = static_cast<gmp_zone_list*>(Memory::malloc_4FE4D0(4 * num_zones + 4));
+    field_32C_pZones = static_cast<gmp_zone_list*>(Memory::malloc_4FE4D0(offsetof(gmp_zone_list, field_4_zone_array[0]) + num_zones * sizeof(gmp_map_zone*)));
 
     in_use_size = 0;
     field_32C_pZones->field_0_num_zones = num_zones;
