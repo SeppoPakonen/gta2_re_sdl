@@ -86,7 +86,13 @@ MATCH_FUNC(0x5B5960)
 void TextTable::TKEY_Load_5B5960(u32 chunk_size)
 {
     // TODO: probably an inline
+#if defined(GTA2_MODERN_BUILD)
+    // Modern 64-bit: TextKeyEntry is 24 bytes (8+8+4), but file format stores 12-byte records.
+    // Use 12-byte record size for count; allocation = count * 24 >= chunk_size, so read won't overflow.
+    field_0_tKey.field_4_tKey_count = chunk_size / 12;
+#else
     field_0_tKey.field_4_tKey_count = chunk_size / sizeof(TextKeyEntry);
+#endif
     field_0_tKey.field_0_tKey = new TextKeyEntry[field_0_tKey.field_4_tKey_count];
     if (!field_0_tKey.field_0_tKey)
     {

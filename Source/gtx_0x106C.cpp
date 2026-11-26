@@ -620,7 +620,12 @@ void gtx_0x106C::load_map_object_info_5AAF00(u32 obji_chunk_len)
 MATCH_FUNC(0x5AAF80)
 void gtx_0x106C::load_sprite_index_5AAF80(u32 sprx_chunk_size)
 {
+#if defined(GTA2_MODERN_BUILD)
+    // Modern 64-bit: sprite_index is 16 bytes, file format stores 8-byte records; allocate enough to hold reads.
+    field_20_sprite_index = static_cast<sprite_index*>(Memory::malloc_4FE4D0(((sprx_chunk_size >> 3) + 1) * sizeof(sprite_index)));
+#else
     field_20_sprite_index = static_cast<sprite_index*>(Memory::malloc_4FE4D0(sprx_chunk_size + 8));
+#endif
     File::Global_Read_4A71C0(field_20_sprite_index, sprx_chunk_size);
     if ((sprx_chunk_size & ~7u) > 524280)
     {

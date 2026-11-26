@@ -20,7 +20,7 @@
 
 DEFINE_GLOBAL(KeyboardLayout*, gKeybrd_0x204_6F52F4, 0x6F52F4);
 
-char kTwoSpacesStr_620D2C[] = {' ', ' ', 0};
+char kTwoSpacesStr_620D2C[] = {' ', ' ', 0, 0};
 
 enum KeyboardLanguage
 {

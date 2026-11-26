@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
+#include <vector>
 
 using gta2::hal::s32;
 using gta2::hal::u8;
@@ -68,6 +69,13 @@ T_gbh_BlitBuffer       pgbh_BlitBuffer       = nullptr;
 
 s32 gGBH_GraphicsLoaded_7085E0 = 1;
 
+// Modern TGA image registry: maps image_idx -> HAL TextureHandle
+static std::vector<gta2::hal::TextureHandle> sBridgeImageHandles;
+static std::vector<u16> sBridgeImageWidths;
+static std::vector<u16> sBridgeImageHeights;
+static std::vector<bool> sBridgeImageLoaded;
+static s32 sNextBridgeImageIdx = 1;
+
 static void Dummy_NoOp() {}
 static s32  Dummy_Zero() { return 0; }
 static void* Dummy_Null() { return nullptr; }
@@ -78,6 +86,183 @@ static gta2::hal::TextureHandle Bridge_TextureHandle(STexture* pTexture) {
     }
     return static_cast<gta2::hal::TextureHandle>(
         reinterpret_cast<std::uintptr_t>(pTexture->field_1C_ptr));
+}
+
+static s32 Bridge_gbh_LoadImage(SImage* pImage) {
+    if (!pImage) return -1;
+    u8* pBuf = reinterpret_cast<u8*>(pImage);
+    if (!pBuf) return -1;
+
+    u8 idLength = pBuf[0];
+    u8 colorMapType = pBuf[1];
+    u8 imageType = pBuf[2];
+    u16 firstEntryIndex = static_cast<u16>((pBuf[3] & 0xFF) | (pBuf[4] << 8));
+    u16 colorMapLength = static_cast<u16>((pBuf[5] & 0xFF) | (pBuf[6] << 8));
+    u8 colorMapEntrySize = pBuf[7];
+    u16 width = static_cast<u16>((pBuf[12] & 0xFF) | (pBuf[13] << 8));
+    u16 height = static_cast<u16>((pBuf[14] & 0xFF) | (pBuf[15] << 8));
+    u8 bitsPerPixel = pBuf[16];
+
+    (void)firstEntryIndex;
+    if (width == 0 || height == 0) return -1;
+
+    const void* pPixels = nullptr;
+    const u16* pPalette565 = nullptr;
+    const u32* pPaletteRGBA = nullptr;
+
+    u32 headerSize = 18 + idLength;
+    u32 colorMapStart = 0;
+    u32 palEntryByteSize = (colorMapEntrySize > 0) ? colorMapEntrySize : 24;
+    if (colorMapType == 1 && colorMapLength > 0) {
+        colorMapStart = headerSize + (firstEntryIndex * palEntryByteSize / 8);
+    }
+    u32 pixOffset = headerSize + colorMapStart;
+
+    if (imageType == 1 || imageType == 9) {
+        u32 palTotal = colorMapLength * palEntryByteSize;
+        if (palTotal > 0) {
+            u16* pal565 = new u16[256]();
+            u32* palRGBA = new u32[256]();
+            for (u32 i = 0; i < colorMapLength; ++i) {
+                u32 idx = firstEntryIndex + i;
+                if (idx >= 256) break;
+                u32 palPos = colorMapStart + (i * palEntryByteSize / 8);
+                u8 b = pBuf[palPos];
+                u8 g = pBuf[palPos + 1];
+                u8 r = pBuf[palPos + 2];
+                pal565[i] = static_cast<u16>((static_cast<u32>(r) * 31 / 255) << 11) |
+                             (static_cast<u32>(g) * 63 / 255) << 5 |
+                             (static_cast<u32>(b) * 31 / 255);
+                palRGBA[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                              (static_cast<u32>(b) << 16) | 0xFF000000u;
+            }
+            pPalette565 = pal565;
+            pPaletteRGBA = palRGBA;
+        }
+        pPixels = const_cast<const void*>(reinterpret_cast<const void*>(pBuf + pixOffset + palTotal));
+    }
+    else if (imageType == 2 || imageType == 10) {
+        u32 pixDataSize = static_cast<u32>(width) * height * (bitsPerPixel / 8);
+        u32* rgbaBuf = new u32[width * height]();
+        const u8* srcPixels = pBuf + pixOffset;
+        if (bitsPerPixel == 16) {
+            for (u32 i = 0; i < width * height; ++i) {
+                u16 px = *reinterpret_cast<const u16*>(srcPixels + i * 2);
+                u8 r = (px >> 10) & 0x1F; r = (r * 255 + 15) / 31;
+                u8 g = (px >> 5) & 0x3F;  g = (g * 255 + 31) / 63;
+                u8 b = px & 0x1F;         b = (b * 255 + 15) / 31;
+                rgbaBuf[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                              (static_cast<u32>(b) << 16) | 0xFF000000u;
+            }
+        } else if (bitsPerPixel == 24) {
+            for (u32 i = 0; i < width * height; ++i) {
+                u8 b = srcPixels[i * 3];
+                u8 g = srcPixels[i * 3 + 1];
+                u8 r = srcPixels[i * 3 + 2];
+                rgbaBuf[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                              (static_cast<u32>(b) << 16) | 0xFF000000u;
+            }
+        } else if (bitsPerPixel == 32) {
+            for (u32 i = 0; i < width * height; ++i) {
+                u8 b = srcPixels[i * 4];
+                u8 g = srcPixels[i * 4 + 1];
+                u8 r = srcPixels[i * 4 + 2];
+                u8 a = srcPixels[i * 4 + 3];
+                rgbaBuf[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                              (static_cast<u32>(b) << 16) | (static_cast<u32>(a) << 24);
+            }
+        }
+        pPixels = rgbaBuf;
+        bitsPerPixel = 32;
+    }
+    else {
+        pPixels = const_cast<const void*>(reinterpret_cast<const void*>(pBuf + pixOffset));
+    }
+
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return -1;
+
+    gta2::hal::TextureDesc desc{};
+    desc.width = width;
+    desc.height = height;
+    desc.bitsPerPixel = bitsPerPixel;
+    desc.pPixels = pPixels;
+    desc.pPalette = pPalette565;
+    desc.pPaletteRGBA = pPaletteRGBA;
+    desc.bTransparent = true;
+
+    gta2::hal::TextureHandle h = pRenderer->RegisterTexture(desc);
+    if (h == gta2::hal::kInvalidTextureHandle) return -1;
+
+    sBridgeImageHandles.resize(sNextBridgeImageIdx + 1);
+    sBridgeImageWidths.resize(sNextBridgeImageIdx + 1);
+    sBridgeImageHeights.resize(sNextBridgeImageIdx + 1);
+    sBridgeImageLoaded.resize(sNextBridgeImageIdx + 1);
+    sBridgeImageHandles[sNextBridgeImageIdx] = h;
+    sBridgeImageWidths[sNextBridgeImageIdx] = width;
+    sBridgeImageHeights[sNextBridgeImageIdx] = height;
+    sBridgeImageLoaded[sNextBridgeImageIdx] = true;
+    sNextBridgeImageIdx++;
+    return sNextBridgeImageIdx - 1;
+}
+
+static s32 Bridge_gbh_BlitImage(s32 image_idx, s32 src_left, s32 src_top, s32 src_right, s32 src_bottom, s32 dst_x, s32 dst_y) {
+    if (image_idx < 0 || image_idx >= (s32)sBridgeImageLoaded.size() || !sBridgeImageLoaded[image_idx]) {
+        return -10;
+    }
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return -10;
+    u16 width = sBridgeImageWidths[image_idx];
+    u16 height = sBridgeImageHeights[image_idx];
+    gta2::hal::TextureHandle h = sBridgeImageHandles[image_idx];
+    gta2::hal::HalVertex verts[4];
+    f32 u0 = static_cast<f32>(src_left) / width;
+    f32 u1 = static_cast<f32>(src_right) / width;
+    f32 v0 = static_cast<f32>(src_top) / height;
+    f32 v1 = static_cast<f32>(src_bottom) / height;
+    verts[0].x = static_cast<f32>(dst_x); verts[0].y = static_cast<f32>(dst_y);
+    verts[0].z = 0.0f; verts[0].w = 1.0f; verts[0].u = u0; verts[0].v = v0;
+    verts[1].x = static_cast<f32>(dst_x + src_right - src_left); verts[1].y = static_cast<f32>(dst_y);
+    verts[1].z = 0.0f; verts[1].w = 1.0f; verts[1].u = u1; verts[1].v = v0;
+    verts[2].x = static_cast<f32>(dst_x); verts[2].y = static_cast<f32>(dst_y + src_bottom - src_top);
+    verts[2].z = 0.0f; verts[2].w = 1.0f; verts[2].u = u0; verts[2].v = v1;
+    verts[3].x = static_cast<f32>(dst_x + src_right - src_left); verts[3].y = static_cast<f32>(dst_y + src_bottom - src_top);
+    verts[3].z = 0.0f; verts[3].w = 1.0f; verts[3].u = u1; verts[3].v = v1;
+    pRenderer->DrawQuad(verts, h, 0x180, 0xFFFFFF);
+    return 0;
+}
+
+static s32 Bridge_gbh_InitImageTable(s32 tableSize) {
+    (void)tableSize;
+    sBridgeImageHandles.clear();
+    sBridgeImageWidths.clear();
+    sBridgeImageHeights.clear();
+    sBridgeImageLoaded.clear();
+    sBridgeImageHandles.push_back(gta2::hal::kInvalidTextureHandle);
+    sBridgeImageWidths.push_back(0);
+    sBridgeImageHeights.push_back(0);
+    sBridgeImageLoaded.push_back(false);
+    sNextBridgeImageIdx = 1;
+    return 0;
+}
+
+static void Bridge_gbh_FreeImageTable() {
+    gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
+    if (!pRenderer) return;
+    for (size_t i = 1; i < sBridgeImageHandles.size(); ++i) {
+        if (sBridgeImageLoaded[i]) {
+            pRenderer->UnregisterTexture(sBridgeImageHandles[i]);
+        }
+    }
+    sBridgeImageHandles.clear();
+    sBridgeImageWidths.clear();
+    sBridgeImageHeights.clear();
+    sBridgeImageLoaded.clear();
+    sBridgeImageHandles.push_back(gta2::hal::kInvalidTextureHandle);
+    sBridgeImageWidths.push_back(0);
+    sBridgeImageHeights.push_back(0);
+    sBridgeImageLoaded.push_back(false);
+    sNextBridgeImageIdx = 1;
 }
 
 static void Bridge_gbh_DrawQuad(s32 flags, STexture* pTexture, Vert* pVerts, s32 baseColour) {
@@ -403,10 +588,10 @@ void GBH_GraphicsInit_Modern() {
     pConvertColourBank    = reinterpret_cast<T_ConvertColourBank>(Dummy_NoOp);
     pSetShadeTableA       = reinterpret_cast<T_SetShadeTableA>(Dummy_NoOp);
 
-    pgbh_InitImageTable   = reinterpret_cast<T_gbh_InitImageTable>(Dummy_Zero);
-    pgbh_FreeImageTable   = reinterpret_cast<T_gbh_FreeImageTable>(Dummy_NoOp);
-    pgbh_LoadImage        = reinterpret_cast<T_gbh_LoadImage>(Dummy_Zero);
-    pgbh_BlitImage        = reinterpret_cast<T_gbh_BlitImage>(Dummy_Zero);
+    pgbh_InitImageTable   = reinterpret_cast<T_gbh_InitImageTable>(Bridge_gbh_InitImageTable);
+    pgbh_FreeImageTable   = reinterpret_cast<T_gbh_FreeImageTable>(Bridge_gbh_FreeImageTable);
+    pgbh_LoadImage        = reinterpret_cast<T_gbh_LoadImage>(Bridge_gbh_LoadImage);
+    pgbh_BlitImage        = reinterpret_cast<T_gbh_BlitImage>(Bridge_gbh_BlitImage);
     pgbh_BlitBuffer       = reinterpret_cast<T_gbh_BlitBuffer>(Dummy_Zero);
 }
 
