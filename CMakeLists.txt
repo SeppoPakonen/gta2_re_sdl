@@ -428,7 +428,13 @@ else()
     list(FILTER GAME_SOURCES EXCLUDE REGEX "Source/3rdParty/.*")
 
     add_library(gta2_core STATIC ${GAME_SOURCES})
-    target_compile_definitions(gta2_core PUBLIC GTA2_MODERN_BUILD)
+    # The original 10.5.exe is a release build: standard assert() is compiled out
+    # (NDEBUG). The Fix16 arithmetic keeps overflow asserts in the source only so
+    # they still count toward VC6's inline sizing, but they must be no-ops at
+    # runtime here too - the original silently wraps on the legitimate overflows
+    # (e.g. Camera::WorldToScreen for off-screen arrow targets). Define NDEBUG so
+    # the modern build matches that behaviour while keeping debug symbols.
+    target_compile_definitions(gta2_core PUBLIC GTA2_MODERN_BUILD NDEBUG)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(gta2_core PRIVATE -fpermissive -Wno-write-strings)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

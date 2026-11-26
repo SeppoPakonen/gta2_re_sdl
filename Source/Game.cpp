@@ -151,6 +151,7 @@ void Game::LoadGameFiles_4B8C40()
     gGtx_0x106C_703DD4->LoadSty_5AB750(style_name);
 
     char_type* map_name = gGameSession_67E8E0.GetMapName_4C5940();
+    if (getenv("GTA2_DBGMAP")) fprintf(stderr, "[LOADMAP] map='%s' style='%s' script='%s'\n", gGameSession_67E8E0.GetMapName_4C5940(), gGameSession_67E8E0.GetStyleName_4C5950(), gGameSession_67E8E0.GetScriptName_4C5960());
     gMap_0x370_6F6268->LoadMap_4E95B0(map_name);
 
     gObjectDefinitions_6FCF00->InitDefinitions_534330();
