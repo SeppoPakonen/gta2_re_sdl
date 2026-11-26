@@ -146,10 +146,13 @@ static s32 Bridge_gbh_LoadImage(SImage* pImage) {
         u32* rgbaBuf = new u32[width * height]();
         const u8* srcPixels = pBuf + pixOffset;
         if (bitsPerPixel == 16) {
+            // Menu TGAs are ARGB1555 (descriptor alpha bit = 1): 1 alpha + 5-5-5.
+            // Decoding as 565 read a 6-bit green that swallowed the alpha bit and
+            // produced green banding. Treat the image as opaque.
             for (u32 i = 0; i < width * height; ++i) {
                 u16 px = *reinterpret_cast<const u16*>(srcPixels + i * 2);
                 u8 r = (px >> 10) & 0x1F; r = (r * 255 + 15) / 31;
-                u8 g = (px >> 5) & 0x3F;  g = (g * 255 + 31) / 63;
+                u8 g = (px >> 5) & 0x1F;  g = (g * 255 + 15) / 31;
                 u8 b = px & 0x1F;         b = (b * 255 + 15) / 31;
                 rgbaBuf[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
                               (static_cast<u32>(b) << 16) | 0xFF000000u;
@@ -216,11 +219,12 @@ static s32 Bridge_gbh_BlitImage(s32 image_idx, s32 src_left, s32 src_top, s32 sr
     gta2::hal::HalVertex verts[4];
     // Pass pixel-space UVs; DrawPrimitive normalises by the texture size. (These
     // used to be pre-divided by width/height, which double-normalised and made
-    // every blit sample only the left-most pixel column.)
+    // every blit sample only the left-most pixel column.) V is swapped because
+    // the TGA origin is bottom-left, so the image rows are bottom-up.
     f32 u0 = static_cast<f32>(src_left);
     f32 u1 = static_cast<f32>(src_right);
-    f32 v0 = static_cast<f32>(src_top);
-    f32 v1 = static_cast<f32>(src_bottom);
+    f32 v0 = static_cast<f32>(src_bottom);
+    f32 v1 = static_cast<f32>(src_top);
     verts[0].x = static_cast<f32>(dst_x); verts[0].y = static_cast<f32>(dst_y);
     verts[0].z = 0.0f; verts[0].w = 1.0f; verts[0].u = u0; verts[0].v = v0;
     verts[1].x = static_cast<f32>(dst_x + src_right - src_left); verts[1].y = static_cast<f32>(dst_y);
