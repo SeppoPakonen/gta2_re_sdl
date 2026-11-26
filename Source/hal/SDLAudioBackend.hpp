@@ -20,6 +20,8 @@ struct VoiceChannel {
     f32 volume = 1.0f;
     f32 pan = 0.0f; // -1.0 (left) to +1.0 (right)
     bool loop = false;
+    f32 sampleRate = 0.0f;
+    f32 pitch = 0.0f;
 };
 
 class SDLAudioBackend : public IAudioBackend {
@@ -45,6 +47,11 @@ private:
     bool mInitialized = false;
     f32 mMasterVolume = 1.0f;
     SoundId mNextSoundId = 1;
+    s32 mDeviceSampleRate = 22050;
+    // Listener state for 3D positioning
+    struct Vector3 { f32 x, y, z; };
+    Vector3 mListenerPos = {0.0f, 0.0f, 0.0f};
+    Vector3 mListenerDir = {0.0f, 0.0f, 1.0f};
 
     public:
         void MixInto(uint8_t* stream, int len);

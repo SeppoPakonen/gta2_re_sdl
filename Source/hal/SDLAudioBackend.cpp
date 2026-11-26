@@ -54,6 +54,7 @@ bool SDLAudioBackend::Initialize(s32 sampleRate, s32 channels, s32 bufferSize) {
     SDL_PauseAudioDevice(mAudioDevice, 0);
     mInitialized = true;
     mMasterVolume = 1.0f;
+    mDeviceSampleRate = 22050;
     return true;
 #endif
 }
@@ -131,6 +132,8 @@ ChannelHandle SDLAudioBackend::PlaySample(SoundId soundId, f32 volume, f32 pan, 
             ch.volume = std::clamp(volume, 0.0f, 1.0f);
             ch.pan = std::clamp(pan, -1.0f, 1.0f);
             ch.loop = loop;
+            ch.pitch = 1.0f;
+            ch.sampleRate = 44100.0f;
             printf("[AUDIO] PlaySample: soundId=%u vol=%.2f pan=%.2f loop=%d -> voice channel %zu\n",
                    soundId, volume, pan, loop ? 1 : 0, i);
             return static_cast<ChannelHandle>(i);
@@ -141,10 +144,59 @@ ChannelHandle SDLAudioBackend::PlaySample(SoundId soundId, f32 volume, f32 pan, 
 
 ChannelHandle SDLAudioBackend::PlaySample3D(SoundId soundId, f32 volume,
                                             const SoundParams3D& params, bool loop) {
-    // 3D playback: for now treat as regular PlaySample with the given volume.
-    // A full 3D implementation would apply distance attenuation, Doppler, etc.
-    (void)params;
-    return PlaySample(soundId, volume, 0.0f, loop);
+    std::lock_guard<std::mutex> lock(mMutex);
+
+    if (mSamples.find(soundId) == mSamples.end()) {
+        return kInvalidChannelHandle;
+    }
+
+    // Compute 3D audio parameters from sound position relative to listener.
+    // Distance attenuation (linear between minDistance and maxDistance).
+    f32 dx = params.posX - mListenerPos.x;
+    f32 dy = params.posY - mListenerPos.y;
+    f32 dz = params.posZ - mListenerPos.z;
+    f32 distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+    f32 attenuation = 1.0f;
+    if (params.maxDistance > params.minDistance) {
+        if (distance <= params.minDistance) {
+            attenuation = 1.0f;
+        } else if (distance >= params.maxDistance) {
+            attenuation = 0.0f;
+        } else {
+            attenuation = 1.0f - (distance - params.minDistance) / (params.maxDistance - params.minDistance);
+        }
+    }
+
+    // Compute pan based on angle relative to listener forward direction.
+    // Project sound position onto listener's horizontal plane (X-Z).
+    f32 sx = dx / (distance + 1e-4f);
+    f32 sz = dz / (distance + 1e-4f);
+    f32 pan = std::atan2(sx, sz) / 3.14159265f; // [-1, 1] approx
+
+    // Doppler pitch shift from relative velocity along sound-to-listener line.
+    f32 relVelX = params.velX;
+    f32 relVelZ = params.velZ;
+    f32 radialVel = (relVelX * sx + relVelZ * sz); // positive = approaching
+    f32 pitch = 1.0f + radialVel / 340.0f; // speed of sound ~340 m/s
+
+    // Find free channel
+    for (size_t i = 0; i < mChannels.size(); ++i) {
+        VoiceChannel& ch = mChannels[i];
+        if (!ch.active) {
+            ch.active = true;
+            ch.soundId = soundId;
+            ch.cursor = 0;
+            ch.volume = std::clamp(volume * attenuation, 0.0f, 1.0f);
+            ch.pan = std::clamp(pan, -1.0f, 1.0f);
+            ch.loop = loop;
+            ch.pitch = std::clamp(pitch, 0.5f, 2.0f);
+            printf("[AUDIO] PlaySample3D: soundId=%u vol=%.2f pan=%.2f pitch=%.2f loop=%d -> voice channel %zu\n",
+                   soundId, ch.volume, ch.pan, ch.pitch, loop ? 1 : 0, i);
+            return static_cast<ChannelHandle>(i);
+        }
+    }
+    return kInvalidChannelHandle;
 }
 
 void SDLAudioBackend::StopChannel(ChannelHandle channel) {
@@ -169,16 +221,17 @@ void SDLAudioBackend::SetChannelPan(ChannelHandle channel, f32 pan) {
 }
 
 void SDLAudioBackend::SetChannelPitch(ChannelHandle channel, f32 pitch) {
-    // Pitch change would require resampling; not implemented in this simple mixer.
-    (void)channel;
-    (void)pitch;
+    std::lock_guard<std::mutex> lock(mMutex);
+    if (channel >= 0 && static_cast<size_t>(channel) < mChannels.size()) {
+        mChannels[static_cast<size_t>(channel)].pitch = std::clamp(pitch, 0.0f, 4.0f);
+    }
 }
 
 void SDLAudioBackend::UpdateListener3D(f32 posX, f32 posY, f32 posZ,
                                        f32 dirX, f32 dirY, f32 dirZ) {
-    (void)posX; (void)posY; (void)posZ;
-    (void)dirX; (void)dirY; (void)dirZ;
-    // No-op for stereo panning backend
+    std::lock_guard<std::mutex> lock(mMutex);
+    mListenerPos = {posX, posY, posZ};
+    mListenerDir = {dirX, dirY, dirZ};
 }
 
 void SDLAudioBackend::SetMasterVolume(f32 volume) {
@@ -217,10 +270,13 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
 
     // Zero-initialize the output buffer
     std::memset(stream, 0, len);
+    int16_t* dst = reinterpret_cast<int16_t*>(stream);
+
+    // Device sample rate (SDL2 default 22050)
+    const s32 deviceRate = mDeviceSampleRate;
 
     for (VoiceChannel& ch : mChannels) {
         if (!ch.active) continue;
-
         auto it = mSamples.find(ch.soundId);
         if (it == mSamples.end()) {
             ch.active = false;
@@ -232,8 +288,13 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
             continue;
         }
 
-        const size_t frameSize = static_cast<size_t>(sample.channels) * 2; // 16-bit = 2 bytes
-        const size_t framesAvail = (sample.frames > ch.cursor) ? (sample.frames - ch.cursor) : 0;
+        // Per-channel resampling: source sampleRate -> device rate.
+        // Playback speed factor = sourceRate / deviceRate.
+        // A sourceRate > deviceRate => faster playback (higher pitch).
+        // A sourceRate < deviceRate => slower playback (lower pitch).
+        const f32 sourceRate = static_cast<f32>(sample.sampleRate);
+        const f32 ratio = sourceRate / static_cast<f32>(deviceRate);
+        const size_t framesAvail = static_cast<size_t>(sample.frames) - ch.cursor;
         if (framesAvail == 0) {
             if (ch.loop) {
                 ch.cursor = 0;
@@ -243,7 +304,6 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
             }
         }
 
-        const size_t framesToMix = std::min(framesAvail, totalFrames);
         const f32 vol = ch.volume * mMasterVolume;
         const f32 pan = ch.pan;
 
@@ -251,28 +311,38 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
         const f32 leftGain  = (pan < 0.0f) ? (1.0f + pan) : (1.0f - pan);
         const f32 rightGain = (pan > 0.0f) ? (1.0f + pan) : (1.0f - pan);
 
-        const int16_t* src = reinterpret_cast<const int16_t*>(sample.pcm.data());
-        int16_t* dst = reinterpret_cast<int16_t*>(stream);
+        // Resample each output frame from source data, applying pitch if set.
+        float srcIdxBase = static_cast<float>(ch.cursor);
+        const f32 effectiveRatio = ratio * ch.pitch;
+        for (size_t outFrame = 0; outFrame < totalFrames; ++outFrame) {
+            // Source sample index for this output frame, accounting for rate ratio.
+            float srcIdx = srcIdxBase + static_cast<float>(outFrame) * effectiveRatio;
+            // Clamp to valid source range.
+            if (srcIdx < 0.0f || srcIdx >= static_cast<float>(sample.frames)) break;
+            int16_t baseIdx = static_cast<int>(srcIdx);
 
-        for (size_t i = 0; i < framesToMix; ++i) {
-            size_t srcIdx = (ch.cursor + i) * sample.channels;
             int16_t leftSample, rightSample;
             if (sample.channels == 1) {
                 // Mono: duplicate to both channels
-                int16_t s = src[srcIdx];
-                leftSample = s;
-                rightSample = s;
+                if (baseIdx < 0 || static_cast<size_t>(baseIdx) >= sample.pcm.size()) break;
+                leftSample = rightSample = sample.pcm[baseIdx];
             } else if (sample.channels >= 2) {
-                leftSample = src[srcIdx];
-                rightSample = src[srcIdx + 1];
+                if (baseIdx < 0 || static_cast<size_t>(baseIdx) * 2 + 1 >= sample.pcm.size()) break;
+                leftSample = sample.pcm[baseIdx * 2];
+                rightSample = sample.pcm[baseIdx * 2 + 1];
             } else {
                 continue;
             }
 
+            // Apply per-channel pitch: if pitch != 1.0f, adjust cursor
+            // such that effective playback speed changes.
+            // We advance cursor by effectiveRatio per output frame below.
+
+            // Additive mix with saturation and volume/pan
             int32_t mixedL = static_cast<int32_t>(leftSample) * vol * leftGain;
             int32_t mixedR = static_cast<int32_t>(rightSample) * vol * rightGain;
 
-            size_t dstIdx = i * 2; // output is always stereo
+            size_t dstIdx = outFrame * 2; // output is always stereo
             // Additive mix with saturation
             mixedL = std::clamp(mixedL + dst[dstIdx], -32768, 32767);
             mixedR = std::clamp(mixedR + dst[dstIdx + 1], -32768, 32767);
@@ -281,8 +351,15 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
             dst[dstIdx + 1] = static_cast<int16_t>(mixedR);
         }
 
-        ch.cursor += framesToMix;
-        if (!ch.loop && ch.cursor >= sample.frames) {
+        // Advance cursor by source frames consumed per output frame
+        ch.cursor += static_cast<s32>(static_cast<float>(totalFrames) * effectiveRatio);
+        // Clamp cursor to sample frames
+        if (ch.cursor > static_cast<s32>(sample.frames)) {
+            ch.cursor = static_cast<s32>(sample.frames);
+        }
+
+        // If not looping and we've consumed all source frames, stop channel
+        if (!ch.loop && ch.cursor >= static_cast<s32>(sample.frames)) {
             ch.active = false;
         }
     }
