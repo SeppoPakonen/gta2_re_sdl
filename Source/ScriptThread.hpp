@@ -160,13 +160,13 @@ struct SCR_POINTER : SCR_CMD_HEADER
 {
     union
     {
-        Ped* field_8_char;
-        Car* field_8_car;
-        Object* field_8_obj;
-        Crane* field_8_crane;
-        Light* field_8_light;
-        Door* field_8_door;
-        Crusher* field_8_crusher;
+        ScriptRuntimePtr<Ped> field_8_char;
+        ScriptRuntimePtr<Car> field_8_car;
+        ScriptRuntimePtr<Object> field_8_obj;
+        ScriptRuntimePtr<Crane> field_8_crane;
+        ScriptRuntimePtr<Light> field_8_light;
+        ScriptRuntimePtr<Door> field_8_door;
+        ScriptRuntimePtr<Crusher> field_8_crusher;
         s32 field_8_counter;
         u16 field_8_index;
         union
@@ -174,9 +174,9 @@ struct SCR_POINTER : SCR_CMD_HEADER
             u16 field_6;
             u16 field_8;
         } words;
-        Generator* field_8_generator;
-        Hud_Arrow* field_8_arrow;
-        AttachedSprite* field_8_sprite;
+        ScriptRuntimePtr<Generator> field_8_generator;
+        ScriptRuntimePtr<Hud_Arrow> field_8_arrow;
+        ScriptRuntimePtr<AttachedSprite> field_8_sprite;
     };
 };
 
