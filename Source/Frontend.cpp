@@ -3104,8 +3104,14 @@ void Frontend::Render_4ADFB0()
     MakeScreenTableAndSetWindow_5D7D30();
 
     pgbh_BeginScene();
-    DrawBackground_4B6E10();
-    DrawCurrentState_4ADF50();
+    if (field_EE08_menu_screen != GameOver_13 && field_EE08_menu_screen != RedBar_16 && field_EE08_menu_screen != BlueBar_14 && field_EE08_menu_screen != Loading_15 && field_EE08_menu_screen != HiScoresDisplay_12 && field_EE08_menu_screen != Credits_17)
+    {
+        DrawBackground_4B6E10();
+    }
+    else
+    {
+        DrawCurrentState_4ADF50();
+    }
     pgbh_EndScene();
 
     FreeSurface_5D7DC0();
