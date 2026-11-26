@@ -166,6 +166,18 @@ void GameLoop_Initialize() {
         Frontend::create_4ACFA0();
         if (gFrontend_67DC84) {
             gFrontend_67DC84->ChangeMenuPage_4B3170(MENUPAGE_START_MENU);
+            if (const char* pStartPage = std::getenv("GTA2_START_PAGE")) {
+                u8 menu_screen = static_cast<u8>(std::atoi(pStartPage));
+                u16 option_idx;
+                switch (menu_screen) {
+                    case 0: option_idx = 1; break; // Options
+                    case 1: option_idx = 0; break; // Play
+                    case 2: option_idx = 2; break; // Quit
+                    default: option_idx = 0;
+                }
+                gFrontend_67DC84->field_136_menu_pages_array[MENUPAGE_START_MENU].field_BC6_current_option_idx = option_idx;
+                gFrontend_67DC84->UpdateMenuScreen_4B6780();
+            }
         }
     }
     bInitialized = true;
