@@ -494,6 +494,10 @@ void SpriteGrid::DoRemove_4782C0(s32 x_pos, s32 y_pos, Sprite* pSprite)
 MATCH_FUNC(0x478370)
 void SpriteGrid::RemoveFromRowBuckets_478370(s32 y_pos, Sprite* pSprite)
 {
+    if (y_pos < 0 || y_pos > 255)
+    {
+        return;
+    }
     s32 x_pos = gSpriteGrid_left_6F5FD4;
     GridCell* pPrevCell = NULL;
     for (GridCell* pCell = this->field_0_rows[y_pos]; pCell; pCell = pCell->mpNext)
@@ -600,6 +604,10 @@ void SpriteGrid::AddToSingleBucket_478440(s32 x_pos, s32 y_pos, Sprite* pSprite)
 MATCH_FUNC(0x4784d0)
 void SpriteGrid::AddToRowBuckets_4784D0(s32 y_pos, Sprite* pSprite)
 {
+    if (y_pos < 0 || y_pos > 255)
+    {
+        return;
+    }
     s32 x_pos = gSpriteGrid_left_6F5FD4;
     GridCell* pNextCell = this->field_0_rows[y_pos];
     GridCell* pPrevCell = NULL;

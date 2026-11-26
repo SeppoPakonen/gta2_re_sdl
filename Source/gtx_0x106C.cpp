@@ -464,9 +464,9 @@ void gtx_0x106C::SetSpriteIndexDataPtrs_5AAC40()
 {
     for (u32 i = 0; i < static_cast<u16>(this->field_4_sprite_index_count); i++)
     {
-        u8* pGraphicsOffset = this->field_20_sprite_index[i].field_0_pData;
         sprite_index* pSpriteIndex = &this->field_20_sprite_index[i];
-        pSpriteIndex->field_0_pData = &this->field_34_sprite_graphics[GTA2_PTR_TO_U32(pGraphicsOffset)];
+        u32 offset = *reinterpret_cast<u32*>(&pSpriteIndex->field_0_pData);
+        pSpriteIndex->field_0_pData = this->field_34_sprite_graphics + offset;
     }
 }
 
@@ -621,17 +621,29 @@ MATCH_FUNC(0x5AAF80)
 void gtx_0x106C::load_sprite_index_5AAF80(u32 sprx_chunk_size)
 {
 #if defined(GTA2_MODERN_BUILD)
-    // Modern 64-bit: sprite_index is 16 bytes, file format stores 8-byte records; allocate enough to hold reads.
-    field_20_sprite_index = static_cast<sprite_index*>(Memory::malloc_4FE4D0(((sprx_chunk_size >> 3) + 1) * sizeof(sprite_index)));
+    u32 num_records = sprx_chunk_size >> 3;
+    u8* pRaw = static_cast<u8*>(Memory::malloc_4FE4D0(sprx_chunk_size));
+    File::Global_Read_4A71C0(pRaw, sprx_chunk_size);
+    field_20_sprite_index = static_cast<sprite_index*>(Memory::malloc_4FE4D0(num_records * sizeof(sprite_index)));
+    for (u32 i = 0; i < num_records; i++)
+    {
+        u8* r = pRaw + i * 8;
+        field_20_sprite_index[i].field_0_pData = reinterpret_cast<u8*>(*reinterpret_cast<u32*>(r));
+        field_20_sprite_index[i].field_4_width = r[4];
+        field_20_sprite_index[i].field_5_height = r[5];
+        field_20_sprite_index[i].field_6_pad = *reinterpret_cast<u16*>(r + 6);
+    }
+    crt::free(pRaw);
+    field_4_sprite_index_count = num_records;
 #else
     field_20_sprite_index = static_cast<sprite_index*>(Memory::malloc_4FE4D0(sprx_chunk_size + 8));
-#endif
     File::Global_Read_4A71C0(field_20_sprite_index, sprx_chunk_size);
     if ((sprx_chunk_size & ~7u) > 524280)
     {
         FatalError_4A38C0(Gta2Error::TooManySprites, "C:\\Splitting\\Gta2\\Source\\style.cpp", 1198, sprx_chunk_size >> 3);
     }
     field_4_sprite_index_count = (sprx_chunk_size >> 3) + 1;
+#endif
 }
 
 MATCH_FUNC(0x5AAFE0)

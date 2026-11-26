@@ -647,6 +647,11 @@ void ScriptThread::SCRCMD_CRANE_5041C0(SCR_CRANE_TARGET_DEC* pTargetCmd, SCR_CRA
     pBasicCmd->field_8_crane =
         gCranePool_D9C_679FD4->NewCrane_480EC0(pTargetCmd->field_10_pos.field_0_x, pTargetCmd->field_10_pos.field_4_y);
 
+    if (!pBasicCmd->field_8_crane)
+    {
+        return;
+    }
+
     if (pTargetCmd->field_2_type == SCRCMD_CRANE_TARGET_DEC)
     {
         if (pTargetCmd->field_1A_home_cranetype == crane_home_target::first_0)
@@ -694,7 +699,10 @@ void ScriptThread::SCRCMD_CRANE_5041C0(SCR_CRANE_TARGET_DEC* pTargetCmd, SCR_CRA
     if (pTargetCmd->field_C_homecrane)
     {
         SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pTargetCmd->field_C_homecrane));
-        pBasicCmd->field_8_crane->SetHomeCrane_476900(pPointer->field_8_crane);
+        if (pPointer)
+        {
+            pBasicCmd->field_8_crane->SetHomeCrane_476900(pPointer->field_8_crane);
+        }
     }
 }
 

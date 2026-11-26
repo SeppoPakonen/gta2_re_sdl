@@ -143,7 +143,7 @@ struct gmp_compressed_map_32
     u32 field_0_base[256][256];
     s32 field_40000_column_words;
     s32 field_40004_num_blocks;
-    u16** field_40008_pColumn;
+    u32* field_40008_pColumn;
     gmp_block_info* field_4000C_block;
 
     gmp_block_info* get_block(u32 block)

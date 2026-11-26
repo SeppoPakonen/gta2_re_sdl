@@ -4443,7 +4443,7 @@ void Map_0x370::GetModifiedMapData_4E8CF0(u16*** outColumnPtr,
                            DmapInfoList** outSubObj,
                            s32* outSubObjBytes)
 {
-    *outColumnPtr = &this->field_0_pDmap->field_40008_pColumn[this->field_0_pDmap->field_40000_column_words];
+    *outColumnPtr = reinterpret_cast<u16**>(&this->field_0_pDmap->field_40008_pColumn[this->field_0_pDmap->field_40000_column_words]);
 
     const s32 totalColumnWords = this->field_360_column_words;
     const s32 consumedColumnWords = this->field_0_pDmap->field_40000_column_words;
@@ -4641,7 +4641,7 @@ void Map_0x370::load_dmap_4E92B0(u32 len)
     u32 m_size = field_35C_column_word_extra * sizeof(u32);
     u32 column_data_size = field_0_pDmap->field_40000_column_words * sizeof(u32);
 
-    field_0_pDmap->field_40008_pColumn = static_cast<u16**>(Memory::malloc_4FE4D0(m_size));
+    field_0_pDmap->field_40008_pColumn = static_cast<u32*>(Memory::malloc_4FE4D0(m_size));
 
     File::Global_Read_4A71C0(field_0_pDmap->field_40008_pColumn, column_data_size);
 
