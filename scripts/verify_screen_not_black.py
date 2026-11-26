@@ -46,16 +46,16 @@ def main():
 
     w, h = map(int, dims.split())
     pixel_count = len(data) // 3
-    non_black = sum(1 for i in range(0, len(data), 3) if data[i] != 0 or data[i+1] != 0 or data[i+2] != 0)
+    non_black_pct = sum(1 for i in range(0, len(data), 3) if data[i] != 0 or data[i+1] != 0 or data[i+2] != 0) / pixel_count * 100
     total_lum = sum(data)
     avg_lum = total_lum / len(data)
 
     print(f"Screenshot resolution: {w}x{h} ({pixel_count} pixels)")
-    print(f"Non-black pixels: {non_black} ({non_black / pixel_count * 100:.2f}%)")
+    print(f"Non-black pixels: {non_black_pct:.2f}%")
     print(f"Average channel brightness: {avg_lum:.2f}")
 
-    if non_black == 0:
-        print("FAILED: Screen is completely BLACK!", file=sys.stderr)
+    if non_black_pct < 20:
+        print(f"FAILED: Screen is too BLACK (only {non_black_pct:.2f}% non-black). Threshold is 20%.", file=sys.stderr)
         return 1
 
     print("SUCCESS: Screen verification PASSED (non-black rendering confirmed)!")
