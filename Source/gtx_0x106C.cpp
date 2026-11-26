@@ -445,6 +445,27 @@ void gtx_0x106C::load_delx_5AAB30(u32 delx_chunk_size)
 MATCH_FUNC(0x5AABF0)
 void gtx_0x106C::SetDeltaDataPtrs_5AABF0()
 {
+#if defined(GTA2_MODERN_BUILD)
+    // On 64-bit the in-memory sprite_delta is 12 bytes (8-byte pointer + len + pad),
+    // not the raw 8-byte delta_entry stride, and field_48_delta_store is a full 64-bit
+    // pointer. Walk the reconstructed sprite_deltas buffer and add the store base to
+    // each delta's offset (temporarily stored in field_0_pData by load_delx).
+    u8* base = reinterpret_cast<u8*>(field_48_delta_store);
+    u32 offset = 0;
+    sprite_deltas* pEntry = static_cast<sprite_deltas*>(field_50_delta_buffer);
+    while (offset < static_cast<u32>(field_60_delta_len))
+    {
+        for (u32 delta_idx = 0; delta_idx < pEntry->field_2_count; delta_idx++)
+        {
+            u32 store_offset = GTA2_PTR_TO_U32(pEntry->field_4_deltas[delta_idx].field_0_pData);
+            pEntry->field_4_deltas[delta_idx].field_0_pData =
+                reinterpret_cast<delta_store_entry*>(base + store_offset);
+        }
+        u32 size = offsetof(sprite_deltas, field_4_deltas[0]) + pEntry->field_2_count * sizeof(sprite_delta);
+        pEntry = reinterpret_cast<sprite_deltas*>(reinterpret_cast<u8*>(pEntry) + size);
+        offset += size;
+    }
+#else
     s32 size;
     delta_entry* pEntry = static_cast<delta_entry*>(field_50_delta_buffer);
 
@@ -457,6 +478,7 @@ void gtx_0x106C::SetDeltaDataPtrs_5AABF0()
         size = offsetof(sprite_deltas, field_4_deltas[0]) + pEntry->field_2_delta_count * sizeof(sprite_delta);
         pEntry = reinterpret_cast<delta_entry*>(reinterpret_cast<char_type*>(pEntry) + size);
     }
+#endif
 }
 
 MATCH_FUNC(0x5AAC40)
