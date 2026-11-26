@@ -111,35 +111,35 @@ static s32 Bridge_gbh_LoadImage(SImage* pImage) {
     const u32* pPaletteRGBA = nullptr;
 
     u32 headerSize = 18 + idLength;
-    u32 colorMapStart = 0;
-    u32 palEntryByteSize = (colorMapEntrySize > 0) ? colorMapEntrySize : 24;
-    if (colorMapType == 1 && colorMapLength > 0) {
-        colorMapStart = headerSize + (firstEntryIndex * palEntryByteSize / 8);
-    }
-    u32 pixOffset = headerSize + colorMapStart;
+    // colorMapEntrySize is bits per palette entry (e.g. 24); convert to bytes.
+    u32 palEntryBytes = ((colorMapEntrySize > 0) ? colorMapEntrySize : 24) / 8;
+    // The color map (if present) starts right after the header + image id.
+    u32 colorMapStart = headerSize;
+    u32 colorMapBytes = (colorMapType == 1) ? (colorMapLength * palEntryBytes) : 0;
+    // Pixel data follows the color map.
+    u32 pixOffset = colorMapStart + colorMapBytes;
 
     if (imageType == 1 || imageType == 9) {
-        u32 palTotal = colorMapLength * palEntryByteSize;
-        if (palTotal > 0) {
+        if (colorMapBytes > 0) {
             u16* pal565 = new u16[256]();
             u32* palRGBA = new u32[256]();
             for (u32 i = 0; i < colorMapLength; ++i) {
                 u32 idx = firstEntryIndex + i;
                 if (idx >= 256) break;
-                u32 palPos = colorMapStart + (i * palEntryByteSize / 8);
+                u32 palPos = colorMapStart + (i * palEntryBytes);
                 u8 b = pBuf[palPos];
                 u8 g = pBuf[palPos + 1];
                 u8 r = pBuf[palPos + 2];
-                pal565[i] = static_cast<u16>((static_cast<u32>(r) * 31 / 255) << 11) |
+                pal565[idx] = static_cast<u16>((static_cast<u32>(r) * 31 / 255) << 11) |
                              (static_cast<u32>(g) * 63 / 255) << 5 |
                              (static_cast<u32>(b) * 31 / 255);
-                palRGBA[i] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
+                palRGBA[idx] = static_cast<u32>(r) | (static_cast<u32>(g) << 8) |
                               (static_cast<u32>(b) << 16) | 0xFF000000u;
             }
             pPalette565 = pal565;
             pPaletteRGBA = palRGBA;
         }
-        pPixels = const_cast<const void*>(reinterpret_cast<const void*>(pBuf + pixOffset + palTotal));
+        pPixels = const_cast<const void*>(reinterpret_cast<const void*>(pBuf + pixOffset));
     }
     else if (imageType == 2 || imageType == 10) {
         u32 pixDataSize = static_cast<u32>(width) * height * (bitsPerPixel / 8);
@@ -228,6 +228,13 @@ static s32 Bridge_gbh_BlitImage(s32 image_idx, s32 src_left, s32 src_top, s32 sr
     verts[2].z = 0.0f; verts[2].w = 1.0f; verts[2].u = u0; verts[2].v = v1;
     verts[3].x = static_cast<f32>(dst_x + src_right - src_left); verts[3].y = static_cast<f32>(dst_y + src_bottom - src_top);
     verts[3].z = 0.0f; verts[3].w = 1.0f; verts[3].u = u1; verts[3].v = v1;
+    // Vertex diffuse/specular colours must be initialised; the shader multiplies
+    // the texture by the vertex colour, so leaving them as stack garbage renders
+    // the image black.
+    for (int i = 0; i < 4; ++i) {
+        verts[i].diff = 0xFFFFFFFFu;
+        verts[i].spec = 0;
+    }
     pRenderer->DrawQuad(verts, h, 0x180, 0xFFFFFF);
     return 0;
 }
