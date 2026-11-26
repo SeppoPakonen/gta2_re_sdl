@@ -212,14 +212,15 @@ static s32 Bridge_gbh_BlitImage(s32 image_idx, s32 src_left, s32 src_top, s32 sr
     }
     gta2::hal::IRenderer* pRenderer = gta2::hal::GetHal().pRenderer;
     if (!pRenderer) return -10;
-    u16 width = sBridgeImageWidths[image_idx];
-    u16 height = sBridgeImageHeights[image_idx];
     gta2::hal::TextureHandle h = sBridgeImageHandles[image_idx];
     gta2::hal::HalVertex verts[4];
-    f32 u0 = static_cast<f32>(src_left) / width;
-    f32 u1 = static_cast<f32>(src_right) / width;
-    f32 v0 = static_cast<f32>(src_top) / height;
-    f32 v1 = static_cast<f32>(src_bottom) / height;
+    // Pass pixel-space UVs; DrawPrimitive normalises by the texture size. (These
+    // used to be pre-divided by width/height, which double-normalised and made
+    // every blit sample only the left-most pixel column.)
+    f32 u0 = static_cast<f32>(src_left);
+    f32 u1 = static_cast<f32>(src_right);
+    f32 v0 = static_cast<f32>(src_top);
+    f32 v1 = static_cast<f32>(src_bottom);
     verts[0].x = static_cast<f32>(dst_x); verts[0].y = static_cast<f32>(dst_y);
     verts[0].z = 0.0f; verts[0].w = 1.0f; verts[0].u = u0; verts[0].v = v0;
     verts[1].x = static_cast<f32>(dst_x + src_right - src_left); verts[1].y = static_cast<f32>(dst_y);
