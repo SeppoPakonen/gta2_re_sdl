@@ -436,8 +436,21 @@ struct BridgePalette {
 };
 
 static std::vector<BridgePalette> sBridgePalettes;
+// The palette registry is global, but a new gtx (style) instance is created for the
+// frontend and again for the game. Palettes baked from a previous style must not be
+// reused, so track which gtx the registry belongs to and reset when it changes.
+static const void* sBridgePaletteOwner = nullptr;
+
+static void Bridge_ResetPalettesIfOwnerChanged() {
+    const void* owner = reinterpret_cast<const void*>(gGtx_0x106C_703DD4);
+    if (owner != sBridgePaletteOwner) {
+        sBridgePalettes.clear();
+        sBridgePaletteOwner = owner;
+    }
+}
 
 static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {
+    Bridge_ResetPalettesIfOwnerChanged();
     if (palId < 0 || !pData) return 0;
     if (static_cast<size_t>(palId) >= sBridgePalettes.size()) {
         sBridgePalettes.resize(palId + 64);
@@ -463,6 +476,7 @@ static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {
 
 static const BridgePalette* GetOrRegisterPalette(s32 palId) {
     if (palId < 0) return nullptr;
+    Bridge_ResetPalettesIfOwnerChanged();
     if (static_cast<size_t>(palId) < sBridgePalettes.size() && sBridgePalettes[palId].loaded) {
         return &sBridgePalettes[palId];
     }
