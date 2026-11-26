@@ -322,13 +322,15 @@ void OpenGLRenderer::SetViewport(s32 x, s32 y, s32 width, s32 height) {
     if (winW <= 0) winW = 1;
     if (winH <= 0) winH = 1;
 
-    float scaleX = static_cast<float>(winW) / 640.0f;
-    float scaleY = static_cast<float>(winH) / 480.0f;
+    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
+    if (scale <= 0.0f) scale = 1.0f;
+    GLint baseVpX = (winW - static_cast<GLint>(640.0f * scale)) / 2;
+    GLint baseVpY = (winH - static_cast<GLint>(480.0f * scale)) / 2;
 
-    GLint vpX = static_cast<GLint>(static_cast<float>(x) * scaleX);
-    GLint vpY = static_cast<GLint>(static_cast<float>(480 - (y + height)) * scaleY);
-    GLsizei vpW = static_cast<GLsizei>(static_cast<float>(width) * scaleX);
-    GLsizei vpH = static_cast<GLsizei>(static_cast<float>(height) * scaleY);
+    GLint vpX = baseVpX + static_cast<GLint>(static_cast<float>(x) * scale);
+    GLint vpY = baseVpY + static_cast<GLint>(static_cast<float>(480 - (y + height)) * scale);
+    GLsizei vpW = static_cast<GLsizei>(static_cast<float>(width) * scale);
+    GLsizei vpH = static_cast<GLsizei>(static_cast<float>(height) * scale);
 
     g_gl.glViewport(vpX, vpY, vpW, vpH);
 }
@@ -346,7 +348,14 @@ void OpenGLRenderer::BeginScene() {
     if (winW <= 0) winW = 1;
     if (winH <= 0) winH = 1;
 
-    g_gl.glViewport(0, 0, winW, winH);
+    float scale = std::min(static_cast<float>(winW) / 640.0f, static_cast<float>(winH) / 480.0f);
+    if (scale <= 0.0f) scale = 1.0f;
+    GLsizei vpW = static_cast<GLsizei>(640.0f * scale);
+    GLsizei vpH = static_cast<GLsizei>(480.0f * scale);
+    GLint vpX = (winW - vpW) / 2;
+    GLint vpY = (winH - vpH) / 2;
+
+    g_gl.glViewport(vpX, vpY, vpW, vpH);
 
     // Fixed 640x480 orthographic projection mapping virtual coordinates to clip space.
     if (mProjUniform >= 0) {
@@ -508,7 +517,7 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
         const size_t pixelCount = static_cast<size_t>(desc.width) * desc.height;
         rgbaBuffer.resize(pixelCount);
         const u8* src = static_cast<const u8*>(desc.pPixels);
-        const size_t srcStride = desc.width;
+        const size_t srcStride = desc.srcStride ? desc.srcStride : desc.width;
 
         for (u16 y = 0; y < desc.height; ++y) {
             const u8* srcRow = src + static_cast<size_t>(y) * srcStride;
@@ -543,6 +552,7 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     info.pPalette = desc.pPalette;
     info.pPaletteRGBA = desc.pPaletteRGBA;
     info.pPixels = desc.pPixels;
+    info.srcStride = desc.srcStride;
     mTextures[handle] = info;
 
     return handle;
@@ -578,7 +588,7 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
         const size_t pixelCount = static_cast<size_t>(info.width) * info.height;
         rgbaBuffer.resize(pixelCount);
         const u8* src = static_cast<const u8*>(info.pPixels);
-        const size_t srcStride = (info.width <= 256) ? 256 : info.width;
+        const size_t srcStride = info.srcStride ? info.srcStride : info.width;
 
         for (u16 y = 0; y < info.height; ++y) {
             const u8* srcRow = src + static_cast<size_t>(y) * srcStride;

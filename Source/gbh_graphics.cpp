@@ -484,6 +484,11 @@ static STexture* Bridge_gbh_RegisterTexture(s32 width, s32 height, BYTE* pData, 
         desc.pPalette = pal ? pal->colors565 : nullptr;
         desc.pPaletteRGBA = pal ? pal->colorsRGBA : nullptr;
         desc.bTransparent = (flag != 0);
+        // Sprite/mask pixel data is stored in 256-byte-wide rows (see
+        // sprite_index::CopyPixels_5ABB00, idx = ypos << 8); only the left
+        // field_4_width bytes of each row are the sprite. Use a 256 stride for
+        // these page-based textures instead of the packed width.
+        desc.srcStride = (width <= 256) ? 256u : static_cast<gta2::hal::u32>(width);
         gta2::hal::TextureHandle h = pRenderer->RegisterTexture(desc);
         tex->field_0_id = static_cast<u16>(h);
         tex->field_1C_ptr = reinterpret_cast<void*>(static_cast<std::uintptr_t>(h));

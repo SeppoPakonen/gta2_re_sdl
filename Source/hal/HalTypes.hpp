@@ -41,6 +41,7 @@ struct TextureDesc {
     const u16* pPalette;     // 256-entry 16-bit RGB565 palette for 8-bit textures
     const u32* pPaletteRGBA; // 256-entry 32-bit RGBA palette
     bool bTransparent;
+    u32 srcStride;           // source row stride in bytes; 0 = use width (packed)
 };
 
 // Handle identifying a registered hardware texture

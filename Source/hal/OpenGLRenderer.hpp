@@ -66,6 +66,7 @@ private:
         const u16* pPalette = nullptr;
         const u32* pPaletteRGBA = nullptr;
         const void* pPixels = nullptr;
+        u32 srcStride = 0;
     };
     std::unordered_map<TextureHandle, TexInfo> mTextures;
     TextureHandle mNextTextureHandle = 1;
