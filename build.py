@@ -336,6 +336,7 @@ def build_cmake(reccmp : bool, core_count_to_use : int, no_wip_logging : bool = 
         )
         p1 = subprocess.Popen(
             command,
+            shell=True,
             cwd=BUILD_DIRECTORY,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
