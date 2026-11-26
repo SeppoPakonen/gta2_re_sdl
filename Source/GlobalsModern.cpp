@@ -17,7 +17,10 @@ DEFINE_GLOBAL(NetworkGameSettings, gNetworkGameSettings_707098, 0x707098);
 DEFINE_GLOBAL(u8, bReplayMode_6F5B71, 0x6F5B71);
 DEFINE_GLOBAL(void*, gHInstance_708220, 0x708220);
 
-EXPORT void Start_GTA2Manager_5E4DE0() {}
+// The original "Options" entry launches the external "GTA2 Manager.EXE" to change
+// display/audio settings. That separate Windows app is not part of this cross-platform
+// port, so keep the action a safe no-op but log it instead of failing silently.
+EXPORT void Start_GTA2Manager_5E4DE0() { printf("[OPTIONS] GTA2 Manager is not available in the modern build\n"); }
 EXPORT void UpdateGameScreenSize_5D8E00() {}
 EXPORT void ResetFrameTimer_4DA830() {}
 EXPORT void ErrorMsgBox_5E4EC0(const char* msg) { if (msg) printf("[ERROR] %s\n", msg); }

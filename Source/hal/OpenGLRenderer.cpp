@@ -152,6 +152,12 @@ const char* const kFragmentShaderSrc =
     "    vec4 finalColor;\n"
     "    if (u_blendMode == 0) {\n"
     "        finalColor = vec4(texColor.rgb, 1.0) * v_color;\n"
+    "    } else if (u_blendMode == 3) {\n"
+    // Fade/alpha sprites (CalcQuadFlags mode 1/2, flag 0x2000) carry opacity in the
+    // vertex diffuse alpha (alpha << 27), not the texture. Modulate both so the
+    // damage/score popups and other fading sprites fade out.
+    "        finalColor = vec4(texColor.rgb * v_color.rgb, texColor.a * v_color.a);\n"
+    "        if (finalColor.a < 0.004) discard;\n"
     "    } else {\n"
     // GTA2 encodes opacity in the texture (palette transparent index), not the
     // vertex alpha; CalcQuadFlags sets vertex alpha to 0 for opaque text. Use the
@@ -432,6 +438,12 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
         if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 2);
         g_gl.glEnable(GL_BLEND);
         g_gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    } else if (flags & 0x2000) {
+        // Vertex-alpha fade (CalcQuadFlags mode 1/2): opacity comes from the vertex
+        // diffuse alpha, so use blend mode 3 which multiplies tex alpha by vertex alpha.
+        if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 3);
+        g_gl.glEnable(GL_BLEND);
+        g_gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     } else if ((flags & 0x180) || (flags & 0x80)) {
         // Alpha blending / transparent sprites
         if (mBlendModeUniform >= 0) g_gl.glUniform1i(mBlendModeUniform, 1);
