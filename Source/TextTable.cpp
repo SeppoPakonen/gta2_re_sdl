@@ -86,20 +86,36 @@ MATCH_FUNC(0x5B5960)
 void TextTable::TKEY_Load_5B5960(u32 chunk_size)
 {
     // TODO: probably an inline
-#if defined(GTA2_MODERN_BUILD)
-    // Modern 64-bit: TextKeyEntry is 24 bytes (8+8+4), but file format stores 12-byte records.
-    // Use 12-byte record size for count; allocation = count * 24 >= chunk_size, so read won't overflow.
     field_0_tKey.field_4_tKey_count = chunk_size / 12;
-#else
-    field_0_tKey.field_4_tKey_count = chunk_size / sizeof(TextKeyEntry);
-#endif
     field_0_tKey.field_0_tKey = new TextKeyEntry[field_0_tKey.field_4_tKey_count];
     if (!field_0_tKey.field_0_tKey)
     {
         FatalError_4A38C0(Gta2Error::OutOfMemoryNewOperator, "C:\\Splitting\\Gta2\\Source\\text.cpp", 218);
     }
 
+#if defined(GTA2_MODERN_BUILD)
+    // The file stores tightly packed 12-byte records (4-byte TDAT offset + 8-byte
+    // inline key), but the in-memory TextKeyEntry is 24 bytes on 64-bit. Read the
+    // raw records and expand each one into its own entry; reading the chunk flat
+    // with a 24-byte stride would corrupt every entry past the first.
+    u8* raw = new u8[chunk_size];
+    File::Global_Read_4A71C0(raw, chunk_size);
+    for (u32 idx = 0; idx < field_0_tKey.field_4_tKey_count; idx++)
+    {
+        const u8* src = raw + (idx * 12);
+        TextKeyEntry* dst = &field_0_tKey.field_0_tKey[idx];
+        memset(dst, 0, sizeof(TextKeyEntry));
+        s32 offsetInBytes;
+        memcpy(&offsetInBytes, src, sizeof(s32));
+        // Temporarily stash the raw offset in field_0_pwstr; TDAT_Offsets2Strings
+        // converts it to a real pointer via GTA2_PTR_TO_S32.
+        dst->field_0_pwstr = reinterpret_cast<wchar_t*>(static_cast<uintptr_t>(static_cast<u32>(offsetInBytes)));
+        memcpy(&dst->field_4_key, src + 4, 8);
+    }
+    delete[] raw;
+#else
     File::Global_Read_4A71C0(field_0_tKey.field_0_tKey, chunk_size);
+#endif
 }
 
 MATCH_FUNC(0x5B59B0)
