@@ -28,6 +28,37 @@ struct SCR_CMD_HEADER
     s16 field_6_return_value;
 };
 
+// 64-bit: the on-disk script records use a 32-bit layout and the slot at offset 8
+// cannot hold a real 8-byte pointer. Runtime object pointers for a command are kept
+// in a side table keyed by the command index (field_0_cmd_this). ScriptRuntimePtr is a
+// 4-byte overlay for that slot; it resolves the real pointer through the side table by
+// reading the owning command header located immediately before it (offset 8 in every
+// overlay struct), so existing `p->field_8_x->...` / `= ptr` / `!p->field_8_x` code is
+// unchanged.
+void* ScriptRuntimePtr_Get(u16 cmd_idx);
+void ScriptRuntimePtr_Set(u16 cmd_idx, void* p);
+
+template <class T>
+struct ScriptRuntimePtr
+{
+    u32 raw; // overlays the 32-bit on-disk slot (unused on disk)
+
+    T* get() const
+    {
+        const SCR_CMD_HEADER* hdr = reinterpret_cast<const SCR_CMD_HEADER*>(reinterpret_cast<const char*>(this) - 8);
+        return static_cast<T*>(ScriptRuntimePtr_Get(hdr->field_0_cmd_this));
+    }
+    operator T*() const { return get(); }
+    T* operator->() const { return get(); }
+    ScriptRuntimePtr& operator=(T* p)
+    {
+        SCR_CMD_HEADER* hdr = reinterpret_cast<SCR_CMD_HEADER*>(reinterpret_cast<char*>(this) - 8);
+        ScriptRuntimePtr_Set(hdr->field_0_cmd_this, p);
+        return *this;
+    }
+    bool operator!() const { return get() == nullptr; }
+};
+
 struct SCR_ONEVAR_RECT : SCR_CMD_HEADER
 {
     u16 field_8_varname;
@@ -38,7 +69,7 @@ struct SCR_ONEVAR_RECT : SCR_CMD_HEADER
 struct SCR_PLAYER_PED
 {
     SCR_CMD_HEADER field_0_header;
-    Ped* field_8_ped;
+    ScriptRuntimePtr<Ped> field_8_ped;
     Fix16_Vec field_C_pos;
     Ang16 field_18_rot;
     s16 field_1A_remap;
@@ -57,7 +88,7 @@ struct SCR_CAR_DATA_DEC : SCR_CMD_HEADER
 
 struct SCR_CHAR_DATA_DEC : SCR_CMD_HEADER
 {
-    Ped* field_8_char;
+    ScriptRuntimePtr<Ped> field_8_char;
     Fix16_Vec field_C_pos;
     Ang16 field_18_rot;
     s16 field_1A_remap;
@@ -166,7 +197,7 @@ struct SCR_LOC_SEC_CHAR : SCR_CMD_HEADER
 
 struct SCR_THREAD : SCR_CMD_HEADER
 {
-    ScriptThread* field_8_script_thread;
+    ScriptRuntimePtr<ScriptThread> field_8_script_thread;
     s16 field_C_thread_id;
     u16 field_E_thread_start_cmd;
     union
@@ -190,7 +221,7 @@ struct SCR_THREAD : SCR_CMD_HEADER
 
 struct SCR_CHAR_AREA_ANY : SCR_CMD_HEADER
 {
-    ScriptThread* field_8_script_thread;
+    ScriptRuntimePtr<ScriptThread> field_8_script_thread;
     s16 field_C_unused;
     u16 field_E_unused;
     Fix16 field_10_x;
@@ -273,7 +304,7 @@ struct SCR_RADIOSTATION_DEC : SCR_CMD_HEADER
 
 struct SCR_CRANE_TARGET_DEC : SCR_CMD_HEADER
 {
-    Crane* field_8_crane;
+    ScriptRuntimePtr<Crane> field_8_crane;
     u32 field_C_homecrane;
     SCR_XY_f field_10_pos;
     u16 field_18_home_rotation;
@@ -285,7 +316,7 @@ struct SCR_CRANE_TARGET_DEC : SCR_CMD_HEADER
 
 struct SCR_CRANE_BASIC_DEC : SCR_CMD_HEADER
 {
-    Crane* field_8_crane;
+    ScriptRuntimePtr<Crane> field_8_crane;
     u32 field_C_homecrane;
     SCR_XY_f field_10_pos;
     u16 field_18_home_rotation;
@@ -449,7 +480,7 @@ struct SCR_IF_JUMP : SCR_CMD_HEADER
 
 struct SCR_DOOR_DATA_DEC : SCR_CMD_HEADER
 {
-    Door* field_8_door;
+    ScriptRuntimePtr<Door> field_8_door;
     SCR_XYZ_uc field_C_block;
     u8 field_F_face;
     u8 field_10_gr_id;

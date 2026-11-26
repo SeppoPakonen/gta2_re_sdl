@@ -692,6 +692,19 @@ SCR_CMD_HEADER* ScriptManager::GetBasePointer_512770(u16 idx)
     return reinterpret_cast<SCR_CMD_HEADER*>(&field_334C_script_data[field_46C_base_pointers[idx]]);
 }
 
+// 64-bit runtime pointer side table for script command overlay structs (see ScriptThread.hpp).
+static void* sScriptRuntimePtrs[6000] = {nullptr};
+
+void* ScriptRuntimePtr_Get(u16 cmd_idx)
+{
+    return sScriptRuntimePtrs[cmd_idx];
+}
+
+void ScriptRuntimePtr_Set(u16 cmd_idx, void* p)
+{
+    sScriptRuntimePtrs[cmd_idx] = p;
+}
+
 MATCH_FUNC(0x5127a0)
 void ScriptManager::ExecuteScriptThreads_5127A0()
 {
