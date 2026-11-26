@@ -153,7 +153,11 @@ const char* const kFragmentShaderSrc =
     "    if (u_blendMode == 0) {\n"
     "        finalColor = vec4(texColor.rgb, 1.0) * v_color;\n"
     "    } else {\n"
-    "        finalColor = texColor * v_color;\n"
+    // GTA2 encodes opacity in the texture (palette transparent index), not the
+    // vertex alpha; CalcQuadFlags sets vertex alpha to 0 for opaque text. Use the
+    // texture alpha for opacity so text is not discarded, and modulate RGB by the
+    // vertex diffuse colour.
+    "        finalColor = vec4(texColor.rgb * v_color.rgb, texColor.a);\n"
     "        if (finalColor.a < 0.05) discard;\n"
     "    }\n"
     "    gl_FragColor = finalColor;\n"
