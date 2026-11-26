@@ -98,7 +98,7 @@ struct SCR_CHAR_DATA_DEC : SCR_CMD_HEADER
 
 struct SCR_OBJ_DATA : SCR_CMD_HEADER
 {
-    Object* field_8_obj;
+    ScriptRuntimePtr<Object> field_8_obj;
     Fix16_Vec field_C_pos;
     u16 field_18_obj_id;
     Ang16 field_1A_rot;
