@@ -473,6 +473,9 @@ void InputDevices::read_input_device_498DA0(s32* input_bits, bool bApplyKeyboard
     // how Player::Hud_Controls receives special keys such as ESC, F1-F4, HOME,
     // etc. The HAL only exposes polled key state, so reproduce the transitions
     // here: inject a DIK only on the frame it goes down (with KeyDown) or up.
+    // Every key is injected (including the 12 control bindings, which are also
+    // read as control bits above), matching the original device-data behaviour;
+    // this is what lets RETURN confirm the in-game quit dialog.
     static bool sPrevKeyState[256] = {false};
     for (u32 dik = 0; dik < 256; ++dik)
     {
@@ -480,20 +483,6 @@ void InputDevices::read_input_device_498DA0(s32* input_bits, bool bApplyKeyboard
         const bool bWasDown = sPrevKeyState[dik];
         sPrevKeyState[dik] = bDown;
         if (bDown == bWasDown)
-        {
-            continue;
-        }
-
-        bool bIsControlKey = false;
-        for (s32 c = 0; c < 12; ++c)
-        {
-            if (gControlDeviceType_67B91C[c] == 0 && gPlayerControlsBinding_67B6E8[c] == dik)
-            {
-                bIsControlKey = true;
-                break;
-            }
-        }
-        if (bIsControlKey)
         {
             continue;
         }

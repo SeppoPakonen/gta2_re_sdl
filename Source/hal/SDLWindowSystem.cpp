@@ -46,9 +46,12 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
         return false;
     }
     mGLContext = SDL_GL_CreateContext(mWindow);
-    // Sync swaps to the display refresh. Without vsync the menu's double buffer is
-    // presented mid-draw on GPU-backed GL, which reads as flicker/tearing.
-    SDL_GL_SetSwapInterval(1);
+    // Do not sync swaps to the display refresh. SwapBuffers() already glFinish()es
+    // so the front buffer is complete before present (fixes GPU-backed tearing).
+    // Requesting vsync here breaks virtual/remote GL (e.g. Xrdp): SwapWindow then
+    // presents the cleared back buffer on most frames, so the menu shows ~1 good
+    // frame in 50 and black otherwise.
+    SDL_GL_SetSwapInterval(0);
     RequestAndLogFramebufferDepth("SDL3 post-context");
     return mGLContext != nullptr;
 }
@@ -189,7 +192,9 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
         return false;
     }
     mGLContext = SDL_GL_CreateContext(mWindow);
-    SDL_GL_SetSwapInterval(1);
+    // See SDL3 path: glFinish in SwapBuffers prevents tearing; vsync breaks
+    // virtual/remote GL (Xrdp) by presenting the cleared back buffer.
+    SDL_GL_SetSwapInterval(0);
     RequestAndLogFramebufferDepth("SDL2 post-context");
     return mGLContext != nullptr;
 }
