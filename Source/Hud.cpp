@@ -616,6 +616,9 @@ void ArrowTrace::UpdateAimCoordinates_5D03F0()
             return;
         case ArrowTargetType::Player_6:
             pPlayer = field_C_player;
+#if defined(GTA2_MODERN_BUILD)
+            if (!pPlayer) { field_10_target_type = ArrowTargetType::Nothing_0; break; }
+#endif
             if (pPlayer->GetInUse_461DB0())
             {
                 field_14_aim_x = pPlayer->field_2C4_player_ped->get_cam_x();
@@ -629,6 +632,9 @@ void ArrowTrace::UpdateAimCoordinates_5D03F0()
             break;
         case ArrowTargetType::Ped_2:
             pPed = field_0_ped;
+#if defined(GTA2_MODERN_BUILD)
+            if (!pPed) { field_10_target_type = ArrowTargetType::Nothing_0; break; }
+#endif
             if (pPed->field_21C_bf.bActive)
             {
                 field_14_aim_x = pPed->get_cam_x();
@@ -642,6 +648,9 @@ void ArrowTrace::UpdateAimCoordinates_5D03F0()
             break;
         case ArrowTargetType::Car_3:
             pCar = field_4_car;
+#if defined(GTA2_MODERN_BUILD)
+            if (!pCar) { field_10_target_type = ArrowTargetType::Nothing_0; break; }
+#endif
             if (pCar->IsDespawning_4215B0())
             {
                 field_10_target_type = ArrowTargetType::Nothing_0;
@@ -655,6 +664,9 @@ void ArrowTrace::UpdateAimCoordinates_5D03F0()
             }
             break;
         case ArrowTargetType::Object_4:
+#if defined(GTA2_MODERN_BUILD)
+            if (!field_8_obj) { field_10_target_type = ArrowTargetType::Nothing_0; break; }
+#endif
             if (!field_8_obj->IsNotModel_174_529200())
             {
                 gHud_2B00_706620->field_1F18_arrows.field_844_check_info_phones = true;

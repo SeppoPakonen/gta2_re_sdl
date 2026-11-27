@@ -57,6 +57,16 @@
 // Back to force inline
 #define INLINE_MODE __forceinline
 
+// 64-bit: a script command's entity pointer (ScriptRuntimePtr) resolves to null once the
+// referenced ped/car/object is removed, whereas the 32-bit original kept a dangling but
+// mapped pointer and never faulted. Skip the command (no-op + advance) when the entity is
+// gone. On the 32-bit matching build this expands to a no-op, so codegen is unchanged.
+#if defined(GTA2_MODERN_BUILD)
+    #define GTA2_SCRIPT_GUARD(ptr) do { if (!(ptr)) { ScriptThread::Next_503620(gBasePtr_6F8070); return; } } while (0)
+#else
+    #define GTA2_SCRIPT_GUARD(ptr) ((void)0)
+#endif
+
 // GetEntityTypeOfCommand_503410
 namespace script_entity_type
 {
@@ -2282,6 +2292,9 @@ void ScriptThread::SCRCMD_POINT_ARROW_AT_5086F0()
     {
         case script_entity_type::car_2:
         {
+#if defined(GTA2_MODERN_BUILD)
+            if (pEntityPtr->field_8_car)
+#endif
             pArrowPtr->field_8_arrow->SetArrowTargetCar_476860(pEntityPtr->field_8_car);
             break;
         }
@@ -2290,6 +2303,10 @@ void ScriptThread::SCRCMD_POINT_ARROW_AT_5086F0()
         {
             Ped* pChar = pEntityPtr->field_8_char;
 
+#if defined(GTA2_MODERN_BUILD)
+            if (!pChar)
+                break;
+#endif
             if (!pChar->is_player_41B0A0() || pChar->field_15C_player->get_idx_4219D0() != gGame_0x40_67E008->GetLocalPlayerIdx_476790())
             {
                 pArrowPtr->field_8_arrow->SetArrowTargetPed_476850(pChar);
@@ -2300,6 +2317,9 @@ void ScriptThread::SCRCMD_POINT_ARROW_AT_5086F0()
 
         case script_entity_type::object_3:
         {
+#if defined(GTA2_MODERN_BUILD)
+            if (pEntityPtr->field_8_obj)
+#endif
             pArrowPtr->field_8_arrow->SetArrowTargetObject_476870(pEntityPtr->field_8_obj);
             break;
         }
@@ -2569,6 +2589,7 @@ void ScriptThread::SCRCMD_SET_CHAR_OCCUPATION_509790()
     SCR_FOUR_PARAMS* pCmd = reinterpret_cast<SCR_FOUR_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     pPointer->field_8_char->field_240_occupation = pCmd->field_C_u32;
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -2636,6 +2657,7 @@ void ScriptThread::SCRCMD_GIVE_WEAPON_5098E0()
 
     if (ScriptThread::GetEntityTypeOfCommand_503410(pPointer->field_2_type) == script_entity_type::char_1)
     {
+        GTA2_SCRIPT_GUARD(pPointer->field_8_char);
         if (gBasePtr_6F8070->field_2_type == SCRCMD_GIVE_WEAPON1)
         {
             pPointer->field_8_char->AddWeaponWithAmmo_45DD30(pCmd->field_A_signed_2, 100);
@@ -3140,6 +3162,7 @@ void ScriptThread::SCRCMD_CHANGE_CAR_REMAP_50A570()
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
     if (pCmd->field_A_unsigned_2 != 0xFFu) //  field_A_unsigned_2 = remap
     {
+        GTA2_SCRIPT_GUARD(pPointer->field_8_car);
         pPointer->field_8_car->SetCarRemap(static_cast<u8>(pCmd->field_A_unsigned_2));
     }
     ScriptThread::Next_503620(gBasePtr_6F8070);
@@ -3695,6 +3718,7 @@ MATCH_FUNC(0x50b440)
 void ScriptThread::SCRCMD_CAR_DRIVE_AWAY_50B440()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     pPointer->field_8_car->InitCarAIControl_440590();
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -3937,6 +3961,7 @@ MATCH_FUNC(0x50ba30)
 void ScriptThread::SCRCMD_CLEAR_WANTED_LEVEL_50BA30()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     pPointer->field_8_char->ClearWantedPoints_420B80();
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -5526,6 +5551,7 @@ void ScriptThread::SCRCMD_SET_CAR_GRAPHIC_50E460()
     SCR_SET_CAR_GRAPHIC* pCmd = reinterpret_cast<SCR_SET_CAR_GRAPHIC*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     pPointer->field_8_car->SetCarGraphic_43CDF0(static_cast<char_type>(pCmd->field_C_number)); // set the number on the top of the car
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -5613,6 +5639,7 @@ void ScriptThread::SCRCMD_CHAR_DRIVE_AGGR_50E730()
     SCR_SET_CHAR_DRIVE_AGGR* pCmd = reinterpret_cast<SCR_SET_CHAR_DRIVE_AGGR*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     pPointer->field_8_char->field_21C_bf.bDriveAggressively = pCmd->field_A_status;
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -5624,6 +5651,7 @@ void ScriptThread::SCRCMD_SET_SPEED_50E780()
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
     if (gBasePtr_6F8070->field_2_type == SCRCMD_SET_RUN_SPEED)
     {
+        GTA2_SCRIPT_GUARD(pPointer->field_8_char);
         pPointer->field_8_char->field_1F0_max_speed = pCmd->field_A_value;
     }
     else
@@ -6553,6 +6581,7 @@ void ScriptThread::SCRCMD_SET_KF_WEAPON_50FE00()
 
     s32 weapon_idx = pCmd->field_C_weapon_idx;
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     if (is_car_weapon(weapon_idx))
     {
         pPointer->field_8_char->field_15C_player->SetKFCarWeapon_564710(pPointer->field_8_char->field_16C_car, weapon_idx);
@@ -6568,6 +6597,7 @@ MATCH_FUNC(0x50fed0)
 void ScriptThread::SCRCMD_CLEAR_KF_WEAPON_50FED0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Player* pPlayer = pPointer->field_8_char->field_15C_player;
 
     pPlayer->ClearKFWeapon_5647D0(); // clear kill frenzy weapon
