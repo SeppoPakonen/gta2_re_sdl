@@ -91,8 +91,11 @@ SoundId SDLAudioBackend::LoadSampleFromMemory(const void* pPcmData, size_t dataS
     }
 
     LoadedSampleData data;
-    data.pcm.assign(static_cast<const u8*>(pPcmData),
-                    static_cast<const u8*>(pPcmData) + dataSize);
+    // Source PCM is 16-bit little-endian; reinterpret the raw bytes as samples
+    // so the mixer reads full-amplitude int16 values instead of single bytes.
+    const size_t numSamples = dataSize / sizeof(int16_t);
+    const int16_t* pSamples = static_cast<const int16_t*>(pPcmData);
+    data.pcm.assign(pSamples, pSamples + numSamples);
     data.sampleRate = sampleRate;
     data.bitsPerSample = bits;
     data.channels = channels;

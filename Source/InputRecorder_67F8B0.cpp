@@ -467,6 +467,43 @@ void InputDevices::read_input_device_498DA0(s32* input_bits, bool bApplyKeyboard
     {
         SetAltKeyState_498CB0(0x00);
     }
+
+    // The original reads DirectInput device-data transitions and injects the raw
+    // DIK scan code into the high input bits (AddKeyToInputBits_498C80), which is
+    // how Player::Hud_Controls receives special keys such as ESC, F1-F4, HOME,
+    // etc. The HAL only exposes polled key state, so reproduce the transitions
+    // here: inject a DIK only on the frame it goes down (with KeyDown) or up.
+    static bool sPrevKeyState[256] = {false};
+    for (u32 dik = 0; dik < 256; ++dik)
+    {
+        const bool bDown = pInput->IsKeyDown(dik);
+        const bool bWasDown = sPrevKeyState[dik];
+        sPrevKeyState[dik] = bDown;
+        if (bDown == bWasDown)
+        {
+            continue;
+        }
+
+        bool bIsControlKey = false;
+        for (s32 c = 0; c < 12; ++c)
+        {
+            if (gControlDeviceType_67B91C[c] == 0 && gPlayerControlsBinding_67B6E8[c] == dik)
+            {
+                bIsControlKey = true;
+                break;
+            }
+        }
+        if (bIsControlKey)
+        {
+            continue;
+        }
+
+        *input_bits |= (static_cast<s32>(dik) << input_bit::KeyShift);
+        if (bDown)
+        {
+            *input_bits |= input_bit::KeyDown;
+        }
+    }
 }
 
 #else

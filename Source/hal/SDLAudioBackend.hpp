@@ -27,7 +27,7 @@ struct VoiceChannel {
 class SDLAudioBackend : public IAudioBackend {
 private:
     struct LoadedSampleData {
-        std::vector<u8> pcm;
+        std::vector<int16_t> pcm;
         s32 sampleRate = 44100;
         s32 bitsPerSample = 16;
         s32 channels = 2;

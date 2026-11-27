@@ -1454,6 +1454,15 @@ void Frontend::DrawMenu_4AD140()
 MATCH_FUNC(0x4B7AE0)
 void Frontend::DrawCredits_4B7AE0()
 {
+#if defined(GTA2_MODERN_BUILD)
+    // The credits screen is excluded from DrawBackground, so unlike the other
+    // menu pages it never repaints a full-screen background and depends entirely
+    // on the post-flip clear. On the modern GL path that clear is not reliably
+    // presented before the next frame, which makes the scrolling text smear.
+    // Clear to black up front so every credits frame starts clean.
+    pVid_ClearScreen(gVidSys_7071D0, 0, 0, 0, 0, 0, gVidSys_7071D0->field_48_rect_right, gVidSys_7071D0->field_4C_rect_bottom);
+#endif
+
     u16 font_type;
     s32 palette;
     s32 draw_kind;
