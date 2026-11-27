@@ -853,9 +853,12 @@ struct SCR_ARROW_ENTITY : SCR_CMD_HEADER
 {
     union
     {
-        Car* field_8_car;
-        Ped* field_8_char;
-        Object* field_8_obj;
+        // 4-byte side-table overlays keep the on-disk 32-bit layout on 64-bit (a raw
+        // pointer would be 8 bytes and corrupt the overlay); same command as the entity's
+        // own field_8_* slot, so it resolves to the same runtime pointer.
+        ScriptRuntimePtr<Car> field_8_car;
+        ScriptRuntimePtr<Ped> field_8_char;
+        ScriptRuntimePtr<Object> field_8_obj;
     };
 };
 
