@@ -256,7 +256,7 @@ bool GameLoop_StepFrame() {
                 }
                 const s32 health = pPed->get_health_433B70();
                 const u32 rng = gpRng_67AB34 ? gpRng_67AB34->get_cur_rng_41CFE0() : 0;
-                std::printf("[DIAG-PLAYER] Frame %d: pos=(%.2f, %.2f, %.2f) health=%d rng=%u\n",
+                GTA2_VLOG("[DIAG-PLAYER] Frame %d: pos=(%.2f, %.2f, %.2f) health=%d rng=%u\n",
                             sFrameCount, px, py, pz, health, rng);
             }
         }
@@ -266,7 +266,7 @@ bool GameLoop_StepFrame() {
             int pedsDummy = gPedManager_6787BC ? gPedManager_6787BC->field_2_num_dummy_chars : 0;
             int carsVisible = gCarManager_6C_677930 ? gCarManager_6C_677930->field_55_visible_cars_count : 0;
             int carsRecycled = gCarManager_6C_677930 ? gCarManager_6C_677930->field_28_recycled_cars : 0;
-            std::printf("[DIAG-ENTITIES] Frame %d: peds(on_screen=%d, updated=%d, dummy=%d), cars(visible=%d, recycled=%d)\n",
+            GTA2_VLOG("[DIAG-ENTITIES] Frame %d: peds(on_screen=%d, updated=%d, dummy=%d), cars(visible=%d, recycled=%d)\n",
                         sFrameCount, pedsOnScreen, pedsUpdated, pedsDummy, carsVisible, carsRecycled);
         }
         std::fflush(stdout);

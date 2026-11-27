@@ -1,4 +1,5 @@
 #include "OpenGLRenderer.hpp"
+#include "types.hpp"
 #include "IWindowSystem.hpp"
 #include "PaletteManager.hpp"
 
@@ -484,12 +485,12 @@ void OpenGLRenderer::DrawTriangle(const HalVertex* verts, TextureHandle texture,
 
 static void CheckTextureDiagnostics(TextureHandle handle, u16 width, u16 height, u8 bpp, const void* pixels, size_t pixelCount, const char* op) {
     if (width == 0 || height == 0) {
-        std::printf("[DIAG-TEX] %s: Empty texture handle=%u (0x0)\n", op, handle);
+        GTA2_VLOG("[DIAG-TEX] %s: Empty texture handle=%u (0x0)\n", op, handle);
         std::fflush(stdout);
         return;
     }
     if (!pixels) {
-        std::printf("[DIAG-TEX] %s: NULL pixels handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
+        GTA2_VLOG("[DIAG-TEX] %s: NULL pixels handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
         std::fflush(stdout);
         return;
     }
@@ -501,13 +502,13 @@ static void CheckTextureDiagnostics(TextureHandle handle, u16 width, u16 height,
         }
     }
     if (nonZeroCount == 0) {
-        std::printf("[DIAG-TEX] %s: All-black texture handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
+        GTA2_VLOG("[DIAG-TEX] %s: All-black texture handle=%u (%dx%d, bpp=%d)\n", op, handle, width, height, bpp);
         std::fflush(stdout);
     } else {
         static int sLoadedLogCount = 0;
         if (sLoadedLogCount < 30) {
             sLoadedLogCount++;
-            std::printf("[DIAG-TEX] %s: handle=%u (%dx%d, bpp=%d, nonZero=%zu/%zu)\n", op, handle, width, height, bpp, nonZeroCount, pixelCount);
+            GTA2_VLOG("[DIAG-TEX] %s: handle=%u (%dx%d, bpp=%d, nonZero=%zu/%zu)\n", op, handle, width, height, bpp, nonZeroCount, pixelCount);
             std::fflush(stdout);
         }
     }

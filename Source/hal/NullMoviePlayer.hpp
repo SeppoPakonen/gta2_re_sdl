@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IMoviePlayer.hpp"
+#include "types.hpp"
 #include <cstdio>
 
 namespace gta2::hal {
@@ -13,7 +14,7 @@ public:
     bool Open(const char* moviePath, IRenderer* pRenderer, IAudioBackend* pAudio) override {
         (void)pRenderer;
         (void)pAudio;
-        printf("[HAL] NullMoviePlayer: Skipping movie '%s'\n", moviePath ? moviePath : "null");
+        GTA2_VLOG("[HAL] NullMoviePlayer: Skipping movie '%s'\n", moviePath ? moviePath : "null");
         return true;
     }
 

@@ -1252,7 +1252,7 @@ static f32 s3DMaxDist[16] = { 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 10
 
 bool cSampleManager::SoundInit_58D6C0(s32* /*not_used*/)
 {
-    printf("[AUDIO] cSampleManager::SoundInit_58D6C0 initializing channels\n");
+    GTA2_VLOG("[AUDIO] cSampleManager::SoundInit_58D6C0 initializing channels\n");
     field_1EB0_count_samples = 16;
     for (int i = 0; i < 16; ++i) {
         sChannelSampleIdx[i] = -1;
@@ -1292,7 +1292,7 @@ bool cSampleManager::LoadWavSdtData_58E980(const char_type* pRawOrSdtName)
     std::string sdtPath = "data/Audio/" + base + ".sdt";
     std::string rawPath = "data/Audio/" + base + ".raw";
 
-    printf("[AUDIO] Loading audio container for '%s' (sdt=%s, raw=%s)\n", pRawOrSdtName, sdtPath.c_str(), rawPath.c_str());
+    GTA2_VLOG("[AUDIO] Loading audio container for '%s' (sdt=%s, raw=%s)\n", pRawOrSdtName, sdtPath.c_str(), rawPath.c_str());
 
     std::vector<gta2::hal::LoadedSoundSample> samples;
     bool ok = gta2::hal::AudioContainerParser::LoadContainer(sdtPath, rawPath, samples);
@@ -1308,11 +1308,11 @@ bool cSampleManager::LoadWavSdtData_58E980(const char_type* pRawOrSdtName)
     }
 
     if (!ok) {
-        printf("[AUDIO] Failed to load container for %s\n", pRawOrSdtName);
+        GTA2_VLOG("[AUDIO] Failed to load container for %s\n", pRawOrSdtName);
         return false;
     }
 
-    printf("[AUDIO] Successfully loaded %zu samples for %s\n", samples.size(), pRawOrSdtName);
+    GTA2_VLOG("[AUDIO] Successfully loaded %zu samples for %s\n", samples.size(), pRawOrSdtName);
 
     for (int i = 0; i < 320; ++i) {
         if (sSdtSoundIds[i] != gta2::hal::kInvalidSoundId) {

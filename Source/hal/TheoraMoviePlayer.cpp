@@ -1,4 +1,5 @@
 #include "TheoraMoviePlayer.hpp"
+#include "types.hpp"
 #include <cstdio>
 #include <cstring>
 
@@ -22,13 +23,13 @@ bool TheoraMoviePlayer::Open(const char* moviePath, IRenderer* pRenderer, IAudio
     // Check if file exists
     FILE* fp = fopen(moviePath, "rb");
     if (!fp) {
-        printf("[HAL] TheoraMoviePlayer: Movie '%s' not found, skipping\n", moviePath);
+        GTA2_VLOG("[HAL] TheoraMoviePlayer: Movie '%s' not found, skipping\n", moviePath);
         mFinished = true;
         return false;
     }
     fclose(fp);
 
-    printf("[HAL] TheoraMoviePlayer: Opened movie '%s'\n", moviePath);
+    GTA2_VLOG("[HAL] TheoraMoviePlayer: Opened movie '%s'\n", moviePath);
     mWidth = 640;
     mHeight = 480;
     mCurrentFrame = 0;

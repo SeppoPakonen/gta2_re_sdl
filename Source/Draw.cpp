@@ -38,13 +38,13 @@ static void DiagnosticRecordText(const wchar_t* pText, Fix16 /*x*/, Fix16 /*y*/)
 void DiagnosticUpdateTextEvents() {
     for (const auto& s : sFrameTexts) {
         if (sLastFrameTexts.find(s) == sLastFrameTexts.end()) {
-            std::printf("[DIAG-TEXT-SHOW] \"%s\"\n", s.c_str());
+            GTA2_VLOG("[DIAG-TEXT-SHOW] \"%s\"\n", s.c_str());
             std::fflush(stdout);
         }
     }
     for (const auto& s : sLastFrameTexts) {
         if (sFrameTexts.find(s) == sFrameTexts.end()) {
-            std::printf("[DIAG-TEXT-HIDE] \"%s\"\n", s.c_str());
+            GTA2_VLOG("[DIAG-TEXT-HIDE] \"%s\"\n", s.c_str());
             std::fflush(stdout);
         }
     }

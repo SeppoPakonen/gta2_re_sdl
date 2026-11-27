@@ -1,5 +1,13 @@
 #include "GlobalsRegistry.hpp"
 
+#include <cstdlib>
+
+#include "types.hpp"
+
+namespace gta2 {
+bool gVerboseLog = (std::getenv("GTA2_VERBOSE") != nullptr);
+}
+
 void GlobalsRegistry::Add(GlobalRef* pRef)
 {
     mGlobals.push_back(pRef);

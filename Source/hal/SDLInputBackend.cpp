@@ -1,4 +1,5 @@
 #include "SDLInputBackend.hpp"
+#include "types.hpp"
 
 #include <cstdio>
 
@@ -84,7 +85,7 @@ bool SDLInputBackend::Initialize() {
         mKeysDownCurrent[i] = false;
         mKeysDownPrev[i] = false;
     }
-    printf("[HAL] Initializing backend: Default\n");
+    GTA2_VLOG("[HAL] Initializing backend: Default\n");
     return true;
 }
 

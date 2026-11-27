@@ -7,6 +7,16 @@
     #include <cstdio>
 #endif
 
+// Verbose runtime diagnostics. Off by default; enable with the GTA2_VERBOSE
+// environment variable. In the matching (VC6) build the macro expands to the
+// original plain printf so codegen is unchanged; only the modern build gates it.
+namespace gta2 { extern bool gVerboseLog; }
+#if defined(GTA2_MODERN_BUILD) || defined(GTA2_PLATFORM_LINUX) || defined(GTA2_USE_SDL2) || defined(GTA2_USE_SDL3)
+    #define GTA2_VLOG(...) do { if (gta2::gVerboseLog) { printf(__VA_ARGS__); } } while (0)
+#else
+    #define GTA2_VLOG(...) printf(__VA_ARGS__)
+#endif
+
 typedef unsigned char u8;
 typedef signed char s8;
 typedef char char_type;

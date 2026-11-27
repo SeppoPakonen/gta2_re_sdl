@@ -1,4 +1,5 @@
 #include "SDLAudioBackend.hpp"
+#include "types.hpp"
 
 #if defined(GTA2_USE_SDL3)
     // SDL3 implementation would go here (audio streams, SDL_CreateAudioStream, etc.)
@@ -45,11 +46,11 @@ bool SDLAudioBackend::Initialize(s32 sampleRate, s32 channels, s32 bufferSize) {
     SDL_AudioSpec obtained{};
     mAudioDevice = SDL_OpenAudioDevice(nullptr, 0, &spec, &obtained, 0);
     if (mAudioDevice == 0) {
-        printf("[AUDIO-INIT] SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
+        GTA2_VLOG("[AUDIO-INIT] SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
         return false;
     }
 
-    printf("[AUDIO-INIT] SDL Audio initialized successfully: device=%u, freq=%d, channels=%d, samples=%d\n",
+    GTA2_VLOG("[AUDIO-INIT] SDL Audio initialized successfully: device=%u, freq=%d, channels=%d, samples=%d\n",
            mAudioDevice, obtained.freq, obtained.channels, obtained.samples);
     SDL_PauseAudioDevice(mAudioDevice, 0);
     mInitialized = true;
@@ -134,7 +135,7 @@ ChannelHandle SDLAudioBackend::PlaySample(SoundId soundId, f32 volume, f32 pan, 
             ch.loop = loop;
             ch.pitch = 1.0f;
             ch.sampleRate = 44100.0f;
-            printf("[AUDIO] PlaySample: soundId=%u vol=%.2f pan=%.2f loop=%d -> voice channel %zu\n",
+            GTA2_VLOG("[AUDIO] PlaySample: soundId=%u vol=%.2f pan=%.2f loop=%d -> voice channel %zu\n",
                    soundId, volume, pan, loop ? 1 : 0, i);
             return static_cast<ChannelHandle>(i);
         }
@@ -191,7 +192,7 @@ ChannelHandle SDLAudioBackend::PlaySample3D(SoundId soundId, f32 volume,
             ch.pan = std::clamp(pan, -1.0f, 1.0f);
             ch.loop = loop;
             ch.pitch = std::clamp(pitch, 0.5f, 2.0f);
-            printf("[AUDIO] PlaySample3D: soundId=%u vol=%.2f pan=%.2f pitch=%.2f loop=%d -> voice channel %zu\n",
+            GTA2_VLOG("[AUDIO] PlaySample3D: soundId=%u vol=%.2f pan=%.2f pitch=%.2f loop=%d -> voice channel %zu\n",
                    soundId, ch.volume, ch.pan, ch.pitch, loop ? 1 : 0, i);
             return static_cast<ChannelHandle>(i);
         }
@@ -375,7 +376,7 @@ void SDLAudioBackend::MixInto(uint8_t* stream, int len) {
     sTotalNonZeroBytes += nonZeroInThisBuffer;
     sMixCallbackCount++;
     if (sMixCallbackCount % 100 == 0 || (nonZeroInThisBuffer > 0 && sMixCallbackCount <= 10)) {
-        printf("[AUDIO-MIX] Callback #%u: %u/%d non-zero bytes mixed (total non-zero bytes sent: %llu)\n",
+        GTA2_VLOG("[AUDIO-MIX] Callback #%u: %u/%d non-zero bytes mixed (total non-zero bytes sent: %llu)\n",
                sMixCallbackCount, nonZeroInThisBuffer, len, static_cast<unsigned long long>(sTotalNonZeroBytes));
         fflush(stdout);
     }

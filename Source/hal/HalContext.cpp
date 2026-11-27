@@ -1,4 +1,5 @@
 #include "HalContext.hpp"
+#include "types.hpp"
 #include "NullMoviePlayer.hpp"
 #include "VfsFileSystem.hpp"
 #include <cstdio>
@@ -14,7 +15,7 @@ HalContext& GetHal() {
 }
 
 bool HalContext::Initialize(const char* backendName) {
-    printf("[HAL] Initializing backend: %s\n", backendName ? backendName : "Default");
+    GTA2_VLOG("[HAL] Initializing backend: %s\n", backendName ? backendName : "Default");
     if (!pMovie) {
         pMovie = &sDefaultMovie;
     }
@@ -32,7 +33,7 @@ void HalContext::Shutdown() {
     if (pInput)      { pInput->Shutdown(); }
     if (pWindow)     { pWindow->Shutdown(); }
     if (pFileSystem) { pFileSystem->Shutdown(); }
-    printf("[HAL] Shutdown complete.\n");
+    GTA2_VLOG("[HAL] Shutdown complete.\n");
 }
 
 } // namespace gta2::hal
