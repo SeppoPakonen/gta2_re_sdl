@@ -261,7 +261,12 @@ char_type CarThreadTriggers::AddThreadTrigger_5C86C0(const s32& type, const s32&
         {
             pIter->field_8_type = type;
             pIter->field_C_action = param;
+#if defined(GTA2_MODERN_BUILD)
+            ScriptRuntimePtr_Set(static_cast<u16>(pScriptThread->field_0_cmd_this), pScriptThread);
+            pIter->field_0_pScriptCmd = pScriptThread->field_0_cmd_this;
+#else
             pIter->field_0_pScriptCmd = GTA2_PTR_TO_S32(pScriptThread);
+#endif
             pIter->field_14_enable_state = car_thread_trigger_state::armed_1;
             pIter->field_4_O2C = gObject_5C_6F8F84->NewTouchPoint_529950(objects::savepoint_161,
                                                                          xpos,
@@ -311,6 +316,18 @@ struct CarThreadTriggerCmd : SCR_CMD_HEADER
     u16 field_24_char_idx;
 };
 
+// field_0_pScriptCmd is a 32-bit slot. On 64-bit it cannot hold a real pointer, so the
+// script command is kept in the runtime pointer side table keyed by its command index
+// (field_0_cmd_this) and resolved back here. On the 32-bit matching build these macros
+// expand to the original expressions verbatim, so codegen is unchanged.
+#if defined(GTA2_MODERN_BUILD)
+    #define TRIGGER_CMD(pEntry) reinterpret_cast<CarThreadTriggerCmd*>(ScriptRuntimePtr_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
+    #define TRIGGER_GEN(pEntry) reinterpret_cast<Generator*>(ScriptRuntimePtr_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
+#else
+    #define TRIGGER_CMD(pEntry) reinterpret_cast<CarThreadTriggerCmd*>((pEntry)->field_0_pScriptCmd)
+    #define TRIGGER_GEN(pEntry) reinterpret_cast<Generator*>((pEntry)->field_0_pScriptCmd)
+#endif
+
 MATCH_FUNC(0x5c8780)
 void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
 {
@@ -339,7 +356,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
             if (pSprite->GetType_416B40() == sprite_types_enum::car_2)
             {
                 pCar = pSprite->field_8_car_bc_ptr;
-                pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                 if (pCar->field_6C_car_id == pPointer->field_8_car->field_6C_car_id)
                 {
                     pEntry->field_14_enable_state = car_thread_trigger_state::fired_0;
@@ -351,7 +368,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
             if (pSprite->GetType_416B40() == sprite_types_enum::ped_3)
             {
                 pPed = pSprite->AsCharB4_40FEA0()->get_ped_433A20();
-                pCmd = reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd);
+                pCmd = TRIGGER_CMD(pEntry);
                 if (pCmd->field_2_type == SCRCMD_THREAD_DECLARE3)
                 {
                     pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_10_char_idx));
@@ -384,7 +401,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pSprite->AsCharB4_40FEA0()->get_ped_433A20();
                 if (pPed)
                 {
-                    pCmd = reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd);
+                    pCmd = TRIGGER_CMD(pEntry);
                     if (pCmd->field_2_type == SCRCMD_CHAR_AREA_ANY_MEANS)
                     {
                         pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_24_char_idx));
@@ -405,7 +422,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pCar->GetDriver_4118B0();
                 if (pPed)
                 {
-                    pCmd = reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd);
+                    pCmd = TRIGGER_CMD(pEntry);
                     if (pCmd->field_2_type == SCRCMD_CHAR_AREA_ANY_MEANS)
                     {
                         pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_24_char_idx));
@@ -429,7 +446,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pCar->GetDriver_4118B0();
                 if (pPed)
                 {
-                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                     if (pPed->get_id() == pPointer->field_8_char->get_id())
                     {
                         pEntry->field_14_enable_state = car_thread_trigger_state::fired_0;
@@ -445,7 +462,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pSprite->AsCharB4_40FEA0()->get_ped_433A20();
                 if (pPed)
                 {
-                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                     if (pPed->GetGameObjectVelocity_433C20() == kZero_705DD8 &&
                         pPed->get_id() == pPointer->field_8_char->get_id())
                     {
@@ -461,7 +478,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pSprite->AsCharB4_40FEA0()->get_ped_433A20();
                 if (pPed)
                 {
-                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                     if (pPed->GetGameObjectVelocity_433C20() == kZero_705DD8 &&
                         pPed->get_id() == pPointer->field_8_char->get_id())
                     {
@@ -475,7 +492,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pCar->GetDriver_4118B0();
                 if (pPed)
                 {
-                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                     if (pPed->GetPedVelocity_45C920() == kZero_705DD8 &&
                         pPed->get_id() == pPointer->field_8_char->get_id())
                     {
@@ -492,7 +509,7 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
                 pPed = pCar->GetDriver_4118B0();
                 if (pPed)
                 {
-                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd)->field_8_idx));
+                    pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(TRIGGER_CMD(pEntry)->field_8_idx));
                     if (pPed->GetPedVelocity_45C920() == kZero_705DD8 &&
                         pPed->get_id() == pPointer->field_8_char->get_id())
                     {
@@ -508,11 +525,11 @@ void CarThreadTriggers::CheckThreadTrigger_5C8780(u8 idx, Sprite* pSprite)
         switch (pEntry->field_C_action)
         {
             case car_thread_trigger_action::spawn_thread_2:
-                pCmd = reinterpret_cast<CarThreadTriggerCmd*>(pEntry->field_0_pScriptCmd);
+                pCmd = TRIGGER_CMD(pEntry);
                 pCmd->field_8_thread = gScriptManager_6F8060->SpawnThread_5120C0(pCmd->field_E_thread_start_cmd, 0);
                 break;
             case car_thread_trigger_action::set_generator_car_type_3:
-                gScriptManager_6F8060->SetGeneratorTypeForCar_511A70(pCar->field_84_car_info_idx, reinterpret_cast<Generator*>(pEntry->field_0_pScriptCmd));
+                gScriptManager_6F8060->SetGeneratorTypeForCar_511A70(pCar->field_84_car_info_idx, TRIGGER_GEN(pEntry));
                 FreeTrigger_5C8680(pEntry->field_10_remap_rng);
                 break;
         }
