@@ -65,6 +65,7 @@ constexpr GLbitfield GL_COLOR_BUFFER_BIT = 0x00004000;
 constexpr GLenum GL_UNPACK_ALIGNMENT = 0x0CF5;
 constexpr GLenum GL_PACK_ALIGNMENT = 0x0D05;
 constexpr GLenum GL_RGB = 0x1907;
+constexpr GLenum GL_RGBA8 = 0x8058;
 
 // GL entry points (resolved at runtime).
 struct GLFunctions {
@@ -555,7 +556,7 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
         uploadPixels = rgbaBuffer.data();
     }
 
-    g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+    g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
                       static_cast<GLsizei>(desc.width), static_cast<GLsizei>(desc.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
 
@@ -626,7 +627,7 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
         uploadPixels = rgbaBuffer.data();
     }
 
-    g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+    g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
                       static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
 }
