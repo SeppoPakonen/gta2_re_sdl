@@ -48,6 +48,7 @@ Source/_tu_harness_tmp*.cpp
 build.log
 dist/
 build_linux*
+!scripts/build_linux64.sh
 .gradle/
 local.properties
 android/local.properties
@@ -61,3 +62,6 @@ data
 player
 crash_reports/
 *.png
+
+# Build scratch (build_linux64.sh TMPDIR)
+tmp/

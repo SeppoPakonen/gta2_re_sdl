@@ -80,6 +80,14 @@ void SDLWindowSystem::ShowCursor(bool show) {
 
 void SDLWindowSystem::SwapBuffers() {
     if (mWindow) {
+        // Sync the GL pipeline before presenting so the front buffer contains every
+        // draw command issued this frame. Without glFinish(), on GPU-backed GL
+        // (e.g. radeonsi, Mesa 26.2.3) SDL_GL_SwapWindow can present a still-drawing
+        // buffer — causing the menu to alternate between text-faded and background-only
+        // frames. glFinish waits for all queued OpenGL commands to complete.
+        if (void (*pFinish)(void) = reinterpret_cast<void (*)(void)>(SDL_GL_GetProcAddress("glFinish"))) {
+            pFinish();
+        }
         SDL_GL_SwapWindow(mWindow);
     }
 }
@@ -210,6 +218,14 @@ void SDLWindowSystem::ShowCursor(bool show) {
 
 void SDLWindowSystem::SwapBuffers() {
     if (mWindow) {
+        // Sync the GL pipeline before presenting so the front buffer contains every
+        // draw command issued this frame. Without glFinish(), on GPU-backed GL
+        // (e.g. radeonsi, Mesa 26.2.3) SDL_GL_SwapWindow can present a still-drawing
+        // buffer — causing the menu to alternate between text-faded and background-only
+        // frames. glFinish waits for all queued OpenGL commands to complete.
+        if (void (*pFinish)(void) = reinterpret_cast<void (*)(void)>(SDL_GL_GetProcAddress("glFinish"))) {
+            pFinish();
+        }
         SDL_GL_SwapWindow(mWindow);
     }
 }

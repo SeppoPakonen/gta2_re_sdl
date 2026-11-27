@@ -11,6 +11,7 @@
 #include "dma_video.hpp"
 #include "InputRecorder_67F8B0.hpp"
 #include "Game.hpp"
+#include "GameSession.hpp"
 #include "Function.hpp"
 #include "debug.hpp"
 #include "root_sound.hpp"
@@ -26,6 +27,7 @@
 #include "Frontend.hpp"
 #include <cstdlib>
 #include <cstdio>
+#include <string>
 
 // Game loop state global definitions.
 DEFINE_GLOBAL(u32, gMatchStartTime_6F5A28, 0x6F5A28);
@@ -202,6 +204,53 @@ bool GameLoop_StepFrame() {
         s32 state = gFrontend_67DC84->Run_4AEDB0();
         sTotalDrawnFrames++;
 
+        // Env-gated automated capture (test-only): GTA2_CAPTURE_DIR=<dir>
+        {
+            const char* pCaptureDirEnv = std::getenv("GTA2_CAPTURE_DIR");
+            if (pCaptureDirEnv && gta2::hal::GetHal().pRenderer) {
+                static int sCaptureFrameIdx = 0;
+                char capturePath[1024];
+                std::snprintf(capturePath, sizeof(capturePath), "%s/frame_%04d.ppm", pCaptureDirEnv, sCaptureFrameIdx);
+                gta2::hal::GetHal().pRenderer->CaptureScreenshot(capturePath);
+                ++sCaptureFrameIdx;
+            }
+        }
+
+        // Env-gated automated start (test-only): GTA2_AUTOSTART_GAME=<N>
+        {
+            static int sAutoStartFrames = 0;
+            static bool sAutoStartTriggered = false;
+            const char* pAutoStartEnv = std::getenv("GTA2_AUTOSTART_GAME");
+            int autoStartFrames = pAutoStartEnv ? std::atoi(pAutoStartEnv) : 0;
+            if (autoStartFrames > 0) {
+                if (!sAutoStartTriggered) {
+                    ++sAutoStartFrames;
+                    if (sAutoStartFrames >= autoStartFrames) {
+                        if (gFrontend_67DC84) {
+                            // Replicate the menu's level selection: take the gmp/sty/scr
+                            // names from the level table for the chosen stage (the
+                            // names already include the "data\" prefix) and set the
+                            // stage index. Hardcoding "bil" loaded the wrong district.
+                            const char* pStageEnv = std::getenv("GTA2_AUTOSTART_STAGE");
+                            int stage = pStageEnv ? std::atoi(pStageEnv) : 0;
+                            if (stage < 0 || stage > 2) {
+                                stage = 0;
+                            }
+                            const MainBlockStrings& blk = gFrontend_67DC84->field_C9E8_blocks[stage][0];
+                            gGameSession_67E8E0.SetMapName_4C5870(blk.field_0_gmp_name);
+                            gGameSession_67E8E0.SetStyleName_4C5890(blk.field_100_sty_name);
+                            gGameSession_67E8E0.SetScriptName_4C58B0(blk.field_200_scr_name);
+                            gGameSession_67E8E0.SetMainStageIdx_4C58F0(stage);
+                            gGameSession_67E8E0.SetStage_4C5900(0);
+                            gGameSession_67E8E0.SetBonusStage_4C5910(0);
+                            gFrontend_67DC84->SetWinMainStateToBootMap_4AE990();
+                        }
+                        sAutoStartTriggered = true;
+                    }
+                }
+            }
+        }
+
         const char* pScreenshotEnv = std::getenv("GTA2_SCREENSHOT_PATH");
         if (pScreenshotEnv && gta2::hal::GetHal().pRenderer && (sTotalDrawnFrames == 5 || sTotalDrawnFrames == 20)) {
             gta2::hal::GetHal().pRenderer->CaptureScreenshot(pScreenshotEnv);
@@ -233,6 +282,18 @@ bool GameLoop_StepFrame() {
     // Run a game frame (pVid_FlipBuffers inside Draw_4DA7B0 swaps buffers when a frame is rendered).
     if (RunGameFrame_4DA850()) {
         return false;
+    }
+
+    // Env-gated capture (test-only): GTA2_CAPTURE_DIR=<dir>
+    {
+        const char* pCaptureDirEnv = std::getenv("GTA2_CAPTURE_DIR");
+        if (pCaptureDirEnv && gta2::hal::GetHal().pRenderer) {
+            static int sGameCaptureFrameIdx = 0;
+            char capturePath[1024];
+            std::snprintf(capturePath, sizeof(capturePath), "%s/frame_%04d.ppm", pCaptureDirEnv, sGameCaptureFrameIdx);
+            bool ok = gta2::hal::GetHal().pRenderer->CaptureScreenshot(capturePath);
+            ++sGameCaptureFrameIdx;
+        }
     }
 
     static int sFrameCount = 0;

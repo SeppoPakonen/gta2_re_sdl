@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 # The VC6 byte-matching build target has been deprecated. The modern cross-platform
 # build (SDL2/SDL3 + OpenGL/GLES/GPU) is the standard and default target.
-option(GTA2_BACKEND "Target backend (SDL2, SDL3, HEADLESS)" "SDL2")
+set(GTA2_BACKEND "SDL2" CACHE STRING "Target backend (SDL2, SDL3, HEADLESS)")
 option(GTA2_MATCHING_BUILD "[DEPRECATED] Build byte-matching VC6 executable (unmaintained)" OFF)
 
 if(GTA2_MATCHING_BUILD)
