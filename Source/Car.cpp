@@ -6655,6 +6655,9 @@ Car::Car()
     field_95_player_ped_id = 0;
     field_68_scale.mValue = 0x4000;
     field_8E_flash_count = 0;
+#if defined(GTA2_MODERN_BUILD)
+    field_AC_sound_event = 0;
+#endif
 }
 
 MATCH_FUNC(0x444960)

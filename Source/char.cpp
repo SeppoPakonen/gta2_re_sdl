@@ -4375,6 +4375,10 @@ bool Char::CanReachTile_550090(u8 xpos, u8 ypos)
 {
     bool bRes_1;
     bool bRes_2;
+#if defined(GTA2_MODERN_BUILD)
+    bRes_1 = false;
+    bRes_2 = false;
+#endif
 
     Fix16 original_x = field_80_sprite_ptr->field_14_xy.x;
     Fix16 original_y = field_80_sprite_ptr->field_14_xy.y;

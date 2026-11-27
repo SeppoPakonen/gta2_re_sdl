@@ -3021,6 +3021,12 @@ Fix16 CarPhysics::ApplyDriveForce_5615D0(Fix16_Point& wheel_point, Ang16 angle, 
     Fix16_Point local_vel;
     Fix16 y_abs;
     Fix16 x_abs;
+#if defined(GTA2_MODERN_BUILD)
+    force = Fix16_Point(kFP16Zero_6FE20C, kFP16Zero_6FE20C);
+    local_vel = Fix16_Point(kFP16Zero_6FE20C, kFP16Zero_6FE20C);
+    y_abs = kFP16Zero_6FE20C;
+    x_abs = kFP16Zero_6FE20C;
+#endif
 
     if (field_95_is_coasting)
     {

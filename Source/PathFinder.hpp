@@ -29,6 +29,9 @@ class PathFinder
   public:
     PathFinder()
     {
+#if defined(GTA2_MODERN_BUILD)
+        field_0_ped_id = 0;
+#endif
         Init_5545E0();
     }
     EXPORT bool CanMoveInDirection_554080(s32 path_direction) const;
