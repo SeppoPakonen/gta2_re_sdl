@@ -240,6 +240,11 @@ void ResetBlockedRoadBrakeTimer_447640()
     gBlockedRoadBrakeTimer_677CFC = 0;
 }
 
+#if defined(GTA2_MODERN_BUILD)
+u16 CarTriggerCmd_Set(void* p);
+void* CarTriggerCmd_Get(u16 key);
+#endif
+
 MATCH_FUNC(0x5c8680)
 void CarThreadTriggers::FreeTrigger_5C8680(u8 idx)
 {
@@ -262,8 +267,7 @@ char_type CarThreadTriggers::AddThreadTrigger_5C86C0(const s32& type, const s32&
             pIter->field_8_type = type;
             pIter->field_C_action = param;
 #if defined(GTA2_MODERN_BUILD)
-            ScriptRuntimePtr_Set(static_cast<u16>(pScriptThread->field_0_cmd_this), pScriptThread);
-            pIter->field_0_pScriptCmd = pScriptThread->field_0_cmd_this;
+            pIter->field_0_pScriptCmd = static_cast<s32>(CarTriggerCmd_Set(pScriptThread));
 #else
             pIter->field_0_pScriptCmd = GTA2_PTR_TO_S32(pScriptThread);
 #endif
@@ -317,12 +321,14 @@ struct CarThreadTriggerCmd : SCR_CMD_HEADER
 };
 
 // field_0_pScriptCmd is a 32-bit slot. On 64-bit it cannot hold a real pointer, so the
-// script command is kept in the runtime pointer side table keyed by its command index
-// (field_0_cmd_this) and resolved back here. On the 32-bit matching build these macros
-// expand to the original expressions verbatim, so codegen is unchanged.
+// script command is kept in a dedicated trigger side table keyed by the slot value and
+// resolved back here. This must NOT share ScriptManager's entity side table: that one is
+// keyed by field_0_cmd_this and is overwritten by entity pointers (field_8_char etc.) for
+// the same command index, which would corrupt the trigger's command. On the 32-bit matching
+// build these macros expand to the original expressions verbatim, so codegen is unchanged.
 #if defined(GTA2_MODERN_BUILD)
-    #define TRIGGER_CMD(pEntry) reinterpret_cast<CarThreadTriggerCmd*>(ScriptRuntimePtr_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
-    #define TRIGGER_GEN(pEntry) reinterpret_cast<Generator*>(ScriptRuntimePtr_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
+    #define TRIGGER_CMD(pEntry) reinterpret_cast<CarThreadTriggerCmd*>(CarTriggerCmd_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
+    #define TRIGGER_GEN(pEntry) reinterpret_cast<Generator*>(CarTriggerCmd_Get(static_cast<u16>((pEntry)->field_0_pScriptCmd)))
     // 64-bit: the referenced ped/car pointer (or the touching sprite's) can be null when
     // the script entity was removed but its trigger still lives; skip the compare instead
     // of dereferencing null. The 32-bit build keeps the original bare comparison.
@@ -333,6 +339,29 @@ struct CarThreadTriggerCmd : SCR_CMD_HEADER
     #define TRIGGER_GEN(pEntry) reinterpret_cast<Generator*>((pEntry)->field_0_pScriptCmd)
     #define PED_MATCHES(pPed, pPtr) ((pPed)->get_id() == (pPtr)->field_8_char->get_id())
     #define CAR_MATCHES(pCar, pPtr) ((pCar)->field_6C_car_id == (pPtr)->field_8_car->field_6C_car_id)
+#endif
+
+#if defined(GTA2_MODERN_BUILD)
+// Dedicated 64-bit side table for a CarThreadTrigger's script command (field_0_pScriptCmd).
+// Separate from ScriptManager's entity table to avoid key collisions on field_0_cmd_this.
+static void* sCarTriggerCmds[6000] = {nullptr};
+static u16 sCarTriggerCmdNext = 1;
+
+void* CarTriggerCmd_Get(u16 key)
+{
+    return sCarTriggerCmds[key];
+}
+
+u16 CarTriggerCmd_Set(void* p)
+{
+    u16 key = sCarTriggerCmdNext++;
+    if (sCarTriggerCmdNext >= 6000)
+    {
+        sCarTriggerCmdNext = 1;
+    }
+    sCarTriggerCmds[key] = p;
+    return key;
+}
 #endif
 
 MATCH_FUNC(0x5c8780)
