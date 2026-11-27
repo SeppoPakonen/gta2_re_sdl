@@ -3112,6 +3112,14 @@ void Frontend::Render_4ADFB0()
 {
     MakeScreenTableAndSetWindow_5D7D30();
 
+#if defined(GTA2_MODERN_BUILD)
+    // Clear the back buffer at the start of the frame instead of after the flip.
+    // On virtual/remote GL (Xrdp) the post-flip clear is presented on most frames
+    // (the menu shows black between good frames); clearing up front guarantees the
+    // buffer that gets presented was freshly drawn this frame.
+    pVid_ClearScreen(gVidSys_7071D0, 0, 0, 0, 0, 0, gVidSys_7071D0->field_48_rect_right, gVidSys_7071D0->field_4C_rect_bottom);
+#endif
+
     pgbh_BeginScene();
     if (field_EE08_menu_screen != GameOver_13 && field_EE08_menu_screen != RedBar_16 && field_EE08_menu_screen != BlueBar_14 && field_EE08_menu_screen != Loading_15 && field_EE08_menu_screen != HiScoresDisplay_12 && field_EE08_menu_screen != Credits_17)
     {
@@ -3134,7 +3142,9 @@ void Frontend::Render_4ADFB0()
 
     pVid_FlipBuffers(gVidSys_7071D0);
 
+#if !defined(GTA2_MODERN_BUILD)
     pVid_ClearScreen(gVidSys_7071D0, 0, 0, 0, 0, 0, gVidSys_7071D0->field_48_rect_right, gVidSys_7071D0->field_4C_rect_bottom);
+#endif
 }
 
 // https://decomp.me/scratch/IOmk7
