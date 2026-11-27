@@ -315,6 +315,9 @@ void ScriptManager::RestoreAnsweredPhones_511C60()
         if (((1 << bit) & gGameSave_6F78C8.field_E4_car_and_script_data.field_48_flags) != 0)
         {
             SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(GetBasePointer_512770(field_C1E32_phone_ids[bit]));
+#if defined(GTA2_MODERN_BUILD)
+            if (!pPointer->field_8_obj) continue;
+#endif
             pPointer->field_8_obj->PoolGiveAndQueueObjectType_5291E0(174);
             gScriptManager_6F8060->RemovePhoneThreadByObjId_512AA0(pPointer->field_8_obj->field_14_id);
         }

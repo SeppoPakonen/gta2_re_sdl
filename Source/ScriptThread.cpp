@@ -1512,6 +1512,7 @@ MATCH_FUNC(0x5060d0)
 void ScriptThread::SCRCMD_DO_CRANE_POWERUP_5060D0(SCR_DECLARE_CRANE_POWERUP* pCmd)
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_8_crane_idx));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_crane);
     pPointer->field_8_crane->field_140_powerup_cmd = pCmd->field_0_cmd_this;
 }
 
@@ -2380,6 +2381,7 @@ void ScriptThread::SCRCMD_CHECK_CAR_DAMAGE_508F00()
 {
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     Car* pCar = pPointer->field_8_car;
     if (pCar->field_74_damage >= 320 * pCmd->field_A_signed_2)
     {
@@ -3050,6 +3052,7 @@ void ScriptThread::SCRCMD_SET_CHAR_OBJ2_50A200()
 {
     SCR_CHAR_OBJECTIVE* pCmd = reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     ScriptThread::SetCharObjective_504110(reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070), pPointer);
 
     SCR_POINTER* pParam;
@@ -3107,6 +3110,7 @@ void ScriptThread::SCRCMD_SET_CHAR_OBJ3_50A3E0()
 {
     SCR_CHAR_OBJ3* pCmd = reinterpret_cast<SCR_CHAR_OBJ3*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     ScriptThread::SetCharObjective_504110(reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070), pPointer);
 
     if (pPointer->field_8_char)
@@ -3126,6 +3130,7 @@ void ScriptThread::SCRCMD_SET_CHAR_OBJ_FOLLOW_50A460()
     SCR_CHAR_OBJECTIVE* pCmd = reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer =
         static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index)); //  TODO: fix gBasePtr_6F8070 type
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     ScriptThread::SetCharObjective_504110(reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070), pPointer);
 
     SCR_POINTER* pCarPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_C_car_idx));
@@ -3494,6 +3499,8 @@ void ScriptThread::SCRCMD_CHANGE_RESPECT_50ACF0()
     Gang* pGang = gGangPool_CA8_67E274->FindGangByName_4BF100(gang_name);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_C_unsigned_3));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
+
     // pCmd->field_A_signed_2 = respect parameter
 
     switch (gBasePtr_6F8070->field_2_type)
@@ -3527,6 +3534,8 @@ void ScriptThread::RespectOperator_50AEF0()
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_8_unsigned_1));
     str_table_entry* pStr = gScriptManager_6F8060->FindStringById_503080(pCmd->field_C_unsigned_3);
     Gang* pGang = gGangPool_CA8_67E274->FindGangByName_4BF100(pStr->get_name());
+
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
 
     switch (pCmd->field_2_type)
     {
@@ -3638,6 +3647,7 @@ MATCH_FUNC(0x50b230)
 void ScriptThread::SCRCMD_CHECK_PHONE_50B230()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_obj);
     ThreadTrigger* pTrigger = gScriptManager_6F8060->FindPhoneThreadByObjId_512AD0(pPointer->field_8_obj->field_14_id);
     SCR_ANSWER_PHONE* pAnswer = static_cast<SCR_ANSWER_PHONE*>(gScriptManager_6F8060->GetBasePointer_512770(pTrigger->field_8_cmd_line));
     if (pAnswer->field_12_answered == 1)
@@ -3656,6 +3666,7 @@ MATCH_FUNC(0x50b2c0)
 void ScriptThread::SCRCMD_CHECK_PHONETIMER_50B2C0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_obj);
     ThreadTrigger* pTrigger = gScriptManager_6F8060->FindPhoneThreadByObjId_512AD0(pPointer->field_8_obj->field_14_id);
     if (pTrigger)
     {
@@ -3702,6 +3713,7 @@ MATCH_FUNC(0x50b3d0)
 void ScriptThread::SCRCMD_IS_CHAR_FIRE_ONSCREEN_50B3D0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
     if (pPed->GetAttacking_433CA0() && pPed->GetOffscreenCounter_4039F0() == 0 && pPed->field_170_selected_weapon)
     {
@@ -3925,6 +3937,8 @@ void ScriptThread::SCRCMD_IS_CHAR_FIRING_AREA_50B910()
     SCR_ONEVAR_RECT* pCmd = reinterpret_cast<SCR_ONEVAR_RECT*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
+
     Ped* pPed = pPointer->field_8_char;
 
     if (pPed->GetAttacking_433CA0() && pPed->IsWithinArea(&pCmd->field_C_rect))
@@ -3972,6 +3986,8 @@ void ScriptThread::SCRCMD_ALT_WANTED_LEVEL_50BA70()
     SCR_CMD_ALTER_WANTED_LEVEL* pCmd = reinterpret_cast<SCR_CMD_ALTER_WANTED_LEVEL*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
+
     if (gBasePtr_6F8070->field_2_type == SCRCMD_ALTER_WANTED_LEVEL)
     {
         if (!pPointer->field_8_char->WantedStarCountGreaterThan_46F100(pCmd->field_C_wanted_level))
@@ -3992,6 +4008,7 @@ void ScriptThread::SCRCMD_CAR_WRECK_IN_LOCATION_50BAD0()
 {
     SCR_ONEVAR_RECT* pCmd = reinterpret_cast<SCR_ONEVAR_RECT*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     Car* pCar = pPointer->field_8_car;
 
     if ((pCar->field_74_damage >= 32000 || pCar->field_88_despawn_status == car_despawn_status::despawning_5) && pCar->IsWithinArea(&pCmd->field_C_rect))
@@ -4065,6 +4082,7 @@ void ScriptThread::SCRCMD_SET_MIN_ALIVE_50BCD0()
     SCR_CHAR_OBJECTIVE* pCmd = reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer =
         static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(reinterpret_cast<SCR_CHAR_OBJECTIVE*>(gBasePtr_6F8070)->field_8_char_idx));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     pPointer->field_8_char->field_164_ped_group->field_35_unused = static_cast<char_type>(pCmd->field_A_objective);
     ScriptThread::Next_503620(gBasePtr_6F8070);
 }
@@ -4131,6 +4149,7 @@ MATCH_FUNC(0x50be70)
 void ScriptThread::SCRCMD_IS_CHAR_HORN_50BE70()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
     Car* pCar = pPed->field_16C_car;
 
@@ -4150,6 +4169,7 @@ void ScriptThread::SCRCMD_CHECK_MAX_PASS_50BED0()
 {
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Car* pCar = pPointer->field_8_char->get_car_416B60();
 
     if (pCar && static_cast<u8>(pCar->GetMaxPassengers_440570()) >= pCmd->field_A_signed_2)
@@ -4168,6 +4188,7 @@ void ScriptThread::SCRCMD_IS_CHAR_IN_ZONE_50BF40()
 {
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     str_table_entry* pStrEntry = gScriptManager_6F8060->FindStringById_503080(pCmd->field_A_signed_2);
     Player* pPlayer = pPointer->field_8_char->field_15C_player;
 
@@ -4291,6 +4312,7 @@ MATCH_FUNC(0x50c230)
 void ScriptThread::SCRCMD_ENABLE_DISABLE_CRANE_50C230()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_crane);
     s16 type = gBasePtr_6F8070->field_2_type;
 
     if (type == SCRCMD_ENABLE_CRANE)
@@ -4308,6 +4330,7 @@ MATCH_FUNC(0x50c2a0)
 void ScriptThread::SCRCMD_CAR_GOT_DRIVER_50C2A0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     if (pPointer->field_8_car->field_54_driver)
     {
         field_8_cond_result = true;
@@ -4323,6 +4346,7 @@ MATCH_FUNC(0x50c2f0)
 void ScriptThread::SCRCMD_SPOTTED_PLAYER_50C2F0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     if (pPointer->field_8_char->HasSpottedPlayer())
     {
         field_8_cond_result = true;
@@ -4341,6 +4365,7 @@ void ScriptThread::SCRCMD_GET_LAST_PUNCHED_50C350()
     SCR_POINTER* pCharTargetPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
     SCR_POINTER* pCharPunchedPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_A_unsigned_2));
 
+    GTA2_SCRIPT_GUARD(pCharTargetPointer->field_8_char);
     pCharPunchedPointer->field_8_char = pCharTargetPointer->field_8_char->get_last_char_punched_475B10();
     pCharTargetPointer->field_8_char->clear_last_char_punched_475B40();
 
@@ -4351,6 +4376,7 @@ MATCH_FUNC(0x50c3b0)
 void ScriptThread::SCRCMD_IS_CHAR_STUNNED_50C3B0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
 
     if (pPed->field_27C_ped_state_2 == ped_state_2::lying_on_floor_22 || pPed->field_216_health <= 25)
@@ -4368,6 +4394,7 @@ MATCH_FUNC(0x50c410)
 void ScriptThread::SCRCMD_KILL_ALL_PASSENG_50C410()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     pPointer->field_8_car->field_4_passengers_list.KillAndClearAllPeds_4715A0();
 
     if (gPublicTransport_181C_6FF1D4->is_bus_579AA0(pPointer->field_8_car))
@@ -4381,6 +4408,7 @@ MATCH_FUNC(0x50c470)
 void ScriptThread::SCRCMD_IS_GROUP_IN_CAR_50C470()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pGroupLeader = pPointer->field_8_char;
     PedGroup* pGroup = pGroupLeader->field_164_ped_group;
 
@@ -4408,6 +4436,7 @@ MATCH_FUNC(0x50c4e0)
 void ScriptThread::SCRCMD_PUNCHED_SOMEONE_50C4E0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     if (pPointer->field_8_char->field_188_last_char_punched != NULL)
     {
         field_8_cond_result = true;
@@ -4428,6 +4457,7 @@ void ScriptThread::SCRCMD_ADD_CHAR_TO_GANG_50C540()
 
     char_type* gang_name = pGangStr->get_name();
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     pPointer->field_8_char->field_17C_pGang = gGangPool_CA8_67E274->FindGangByName_4BF100(gang_name);
 
     ScriptThread::Next_503620(gBasePtr_6F8070);
@@ -4459,10 +4489,12 @@ void ScriptThread::SCRCMD_EXPLODE_50C5A0()
     switch (ScriptThread::GetEntityTypeOfCommand_503410(pPointer->field_2_type))
     {
         case script_entity_type::car_2:
+            GTA2_SCRIPT_GUARD(pPointer->field_8_car);
             pPointer->field_8_car->HandleCarExplosion_43D840(explosion_type::item_19);
             break;
         case script_entity_type::char_1:
         {
+            GTA2_SCRIPT_GUARD(pPointer->field_8_char);
             Ped* pChar = pPointer->field_8_char;
 
             gObject_5C_6F8F84
@@ -4473,6 +4505,7 @@ void ScriptThread::SCRCMD_EXPLODE_50C5A0()
         case script_entity_type::object_3:
         {
             // 9.6f: Object::GetX_4340D0/GetY_4340E0/GetZ_4340F0 (inlined, using them changes the code)
+            GTA2_SCRIPT_GUARD(pPointer->field_8_obj);
             Sprite* pSprite = pPointer->field_8_obj->field_4_sprite;
 
             gObject_5C_6F8F84
@@ -4521,6 +4554,8 @@ void ScriptThread::SCRCMD_BEEN_PUNCHED_BY_50C760()
     SCR_POINTER* pPointerVictim = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
     SCR_POINTER* pPointerAttacker = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_A_unsigned_2));
 
+    GTA2_SCRIPT_GUARD(pPointerVictim->field_8_char);
+    GTA2_SCRIPT_GUARD(pPointerAttacker->field_8_char);
     if (pPointerAttacker->field_8_char->field_188_last_char_punched == pPointerVictim->field_8_char)
     {
         field_8_cond_result = true;
@@ -4537,6 +4572,8 @@ void ScriptThread::SCRCMD_UPDATE_DOOR_50C7D0()
 {
     SCR_UPDATE_DOOR* pCmd = reinterpret_cast<SCR_UPDATE_DOOR*>(gBasePtr_6F8070);
     SCR_POINTER* pDoorPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_8_door_idx));
+
+    GTA2_SCRIPT_GUARD(pDoorPointer->field_8_door);
 
     SCR_POINTER* pTarget;
 
@@ -4568,6 +4605,8 @@ MATCH_FUNC(0x50c8a0)
 void ScriptThread::SCRCMD_DOOR_50C8A0()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+
+    GTA2_SCRIPT_GUARD(pPointer->field_8_door);
 
     switch (gBasePtr_6F8070->field_2_type)
     {
@@ -4624,6 +4663,7 @@ void ScriptThread::SCRCMD_REMOVE_WEAPON_50C990()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
     Player* pPlayer = pPed->field_15C_player;
 
@@ -4710,6 +4750,8 @@ void ScriptThread::SCRCMD_CHECK_CAR_DRIVER_50CB70()
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
     field_8_cond_result = false;
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
+
     switch (gBasePtr_6F8070->field_2_type)
     {
         case SCRCMD_CHECK_CAR_DRIVER:
@@ -4787,6 +4829,7 @@ void ScriptThread::SCRCMD_SWITCH_GENERATOR1_50CCB0()
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_generator);
     u16 spawn_count = pCmd->field_A_unsigned_2;
     Generator* pGen = pPointer->field_8_generator;
     pGen->Activate_4C1A70();
@@ -4811,6 +4854,7 @@ void ScriptThread::SCRCMD_SWITCH_GENERATOR3_50CD30()
 {
     SCR_FOUR_PARAMS* pCmd = reinterpret_cast<SCR_FOUR_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_generator);
     pPointer->field_8_generator->field_0_gen_type = pCmd->field_C_signed_3;
 
     Generator* pGen = pPointer->field_8_generator;
@@ -4838,6 +4882,7 @@ void ScriptThread::SCRCMD_CAR_DAMAGE_POS_50CDB0()
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     if ((pPointer->field_8_car)->IsAreaDamaged_43D1C0(pCmd->field_A_signed_2)) // field_A_signed_2 = damage pos
     {
         field_8_cond_result = true;
@@ -5677,6 +5722,8 @@ void ScriptThread::SCRCMD_CAR_WEAPON_KIND_PROOF_50E820()
 
     Car* pCar;
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
+
     switch (pCmd->field_2_type)
     {
         case SCRCMD_CAR_BULLETPROOF:
@@ -6130,6 +6177,7 @@ void ScriptThread::SCRCMD_WARP_CHAR_50F270() // WARP_FROM_CAR_TO_POINT
 {
     SCR_WARP_FROM_CAR* pCmd = reinterpret_cast<SCR_WARP_FROM_CAR*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
     Car* pCar = pPed->get_car_416B60();
 
@@ -6161,6 +6209,7 @@ void ScriptThread::SCRCMD_SET_GROUP_TYPE_50F3D0()
 {
     SCR_SET_GROUP_TYPE* pCmd = reinterpret_cast<SCR_SET_GROUP_TYPE*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pPed = pPointer->field_8_char;
     PedGroup* pGroup = pPed->field_164_ped_group;
 
@@ -6190,6 +6239,7 @@ void ScriptThread::SCRCMD_EMERG_LIGHTS_50F450()
     SCR_TWO_PARAMS* pCmd = reinterpret_cast<SCR_TWO_PARAMS*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_car);
     if (pPointer->field_8_car->HasEmergencyLights_414F20())
     {
         if (static_cast<u8>(pCmd->field_A_unsigned_2) == 1)
@@ -6312,6 +6362,8 @@ void ScriptThread::LocSecChar_50F7B0()
     SCR_POINTER* pChar1 = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_8_char1_idx));
     SCR_POINTER* pChar2 = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(pCmd->field_A_char2_idx));
 
+    GTA2_SCRIPT_GUARD(pChar2->field_8_char);
+    GTA2_SCRIPT_GUARD(pChar1->field_8_char);
     Ped* pCenter = pChar2->field_8_char;
     Fix16 centerX = pCenter->field_1AC_cam.x;
     Fix16 centerY = pCenter->field_1AC_cam.y;
@@ -6360,6 +6412,7 @@ MATCH_FUNC(0x50f900)
 void ScriptThread::SCRCMD_STOP_CAR_DRIVE_50F900()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Car* pCar = pPointer->field_8_char->field_16C_car;
 
     if (pCar)
@@ -6522,6 +6575,7 @@ void ScriptThread::GroupInArea_50FC60()
     SCR_ONEVAR_RECT* pCmd = reinterpret_cast<SCR_ONEVAR_RECT*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
 
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Fix16 halfwidth = pCmd->field_C_rect.field_C_size.field_0_x / kFpTwo_6F77C8;
     Fix16 halfheight = pCmd->field_C_rect.field_C_size.field_4_y / kFpTwo_6F77C8;
 
@@ -6646,6 +6700,7 @@ MATCH_FUNC(0x510050)
 void ScriptThread::SCRCMD_DESTROY_GROUP_510050()
 {
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Ped* pGroupLeader = pPointer->field_8_char;
     PedGroup* pGroup = pGroupLeader->field_164_ped_group;
 
@@ -6661,7 +6716,7 @@ void ScriptThread::SCRCMD_CHECK_CURRENT_WEAPON_510090()
 {
     SCR_CHECK_CURRENT_WEAPON* pCmd = reinterpret_cast<SCR_CHECK_CURRENT_WEAPON*>(gBasePtr_6F8070);
     SCR_POINTER* pPointer = static_cast<SCR_POINTER*>(gScriptManager_6F8060->GetBasePointer_512770(gBasePtr_6F8070->field_8_index));
-
+    GTA2_SCRIPT_GUARD(pPointer->field_8_char);
     Weapon* pWeapon = pPointer->field_8_char->field_15C_player->GetCurrPlayerWeapon_5648F0();
 
     if (pWeapon != NULL && static_cast<u32>(pWeapon->field_1C_weapon_type) == pCmd->field_C_weapon_idx)
