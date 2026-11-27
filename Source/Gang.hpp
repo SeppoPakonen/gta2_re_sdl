@@ -4,6 +4,9 @@
 #include "Game.hpp"
 #include "fix16.hpp"
 #include <wchar.h>
+#if defined(GTA2_MODERN_BUILD)
+#include <cstring>
+#endif
 
 class gmp_map_zone;
 
@@ -140,6 +143,12 @@ class GangPool
   public:
     GangPool()
     {
+#if defined(GTA2_MODERN_BUILD)
+        // Modern build: the original relied on the fresh process heap being
+        // zero; our allocator hands back uninitialised memory, so clear the
+        // gang list (names/arrow colours are read before being set).
+        memset(field_0_gang_list, 0, sizeof(field_0_gang_list));
+#endif
     }
 
     EXPORT ~GangPool();

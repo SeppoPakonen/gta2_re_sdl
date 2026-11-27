@@ -14,6 +14,10 @@
 #endif
 #include "enums.hpp"
 
+#if defined(GTA2_MODERN_BUILD)
+u32 gGtxPaletteGeneration_0x = 0;
+#endif
+
 // Forward declarations: the functions below are in address order
 void __stdcall ClearPixelsOfColourInRow_5ABAE0(u8* pData, s32 width, u8 clear_target);
 
@@ -603,6 +607,9 @@ void gtx_0x106C::load_physical_palettes_5AAE70(u32 ppal_chunk_size)
     field_2C_physical_palettes = Memory::Aligned_malloc_4FE510(ppal_chunk_size, &field_30_physical_palettes_unaligned);
     File::Global_Read_4A71C0(field_2C_physical_palettes, ppal_chunk_size);
     field_8_physical_palettes_len = ppal_chunk_size >> 10;
+#if defined(GTA2_MODERN_BUILD)
+    ++gGtxPaletteGeneration_0x;
+#endif
 }
 
 MATCH_FUNC(0x5AAEA0)

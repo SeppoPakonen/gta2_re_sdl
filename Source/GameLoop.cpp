@@ -251,6 +251,29 @@ bool GameLoop_StepFrame() {
             }
         }
 
+        // Env-gated automated demo start through the menu (test-only):
+        // GTA2_AUTOSTART_DEMO=<N> lets the frontend/menu run N frames, then takes
+        // the same Start_Replay_4 path the menu uses to launch the attract demo.
+        // Unlike "--demo" (which skips the frontend), this goes through the menu,
+        // so it reproduces the menu->demo transition.
+        {
+            static int sAutoDemoFrames = 0;
+            static bool sAutoDemoTriggered = false;
+            const char* pAutoDemoEnv = std::getenv("GTA2_AUTOSTART_DEMO");
+            int autoDemoFrames = pAutoDemoEnv ? std::atoi(pAutoDemoEnv) : 0;
+            if (autoDemoFrames > 0 && !sAutoDemoTriggered) {
+                ++sAutoDemoFrames;
+                if (sAutoDemoFrames >= autoDemoFrames) {
+                    sAutoDemoTriggered = true;
+                    Frontend::destroy_4AD070();
+                    bDoFrontEnd_626B68 = 0;
+                    bReplayMode_6F5B71 = 1;
+                    InitializeGame_4DA4D0();
+                    return true;
+                }
+            }
+        }
+
         const char* pScreenshotEnv = std::getenv("GTA2_SCREENSHOT_PATH");
         if (pScreenshotEnv && gta2::hal::GetHal().pRenderer && (sTotalDrawnFrames == 5 || sTotalDrawnFrames == 20)) {
             gta2::hal::GetHal().pRenderer->CaptureScreenshot(pScreenshotEnv);
@@ -284,15 +307,26 @@ bool GameLoop_StepFrame() {
         return false;
     }
 
-    // Env-gated capture (test-only): GTA2_CAPTURE_DIR=<dir>
+    // Env-gated capture (test-only): GTA2_CAPTURE_DIR=<dir>, GTA2_CAPTURE_STRIDE=<n>
+    // (capture every Nth frame), GTA2_CAPTURE_MAX=<n> (stop after N captures).
     {
         const char* pCaptureDirEnv = std::getenv("GTA2_CAPTURE_DIR");
         if (pCaptureDirEnv && gta2::hal::GetHal().pRenderer) {
             static int sGameCaptureFrameIdx = 0;
-            char capturePath[1024];
-            std::snprintf(capturePath, sizeof(capturePath), "%s/frame_%04d.ppm", pCaptureDirEnv, sGameCaptureFrameIdx);
-            bool ok = gta2::hal::GetHal().pRenderer->CaptureScreenshot(capturePath);
-            ++sGameCaptureFrameIdx;
+            static int sGameCaptureTick = 0;
+            const char* pStrideEnv = std::getenv("GTA2_CAPTURE_STRIDE");
+            int stride = pStrideEnv ? std::atoi(pStrideEnv) : 1;
+            if (stride < 1) stride = 1;
+            const char* pMaxEnv = std::getenv("GTA2_CAPTURE_MAX");
+            int maxFrames = pMaxEnv ? std::atoi(pMaxEnv) : 0;
+            if (maxFrames <= 0 || sGameCaptureFrameIdx < maxFrames) {
+                if ((sGameCaptureTick++ % stride) == 0) {
+                    char capturePath[1024];
+                    std::snprintf(capturePath, sizeof(capturePath), "%s/frame_%04d.ppm", pCaptureDirEnv, sGameCaptureFrameIdx);
+                    gta2::hal::GetHal().pRenderer->CaptureScreenshot(capturePath);
+                    ++sGameCaptureFrameIdx;
+                }
+            }
         }
     }
 

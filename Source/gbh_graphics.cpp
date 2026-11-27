@@ -439,14 +439,28 @@ static std::vector<BridgePalette> sBridgePalettes;
 // The palette registry is global, but a new gtx (style) instance is created for the
 // frontend and again for the game. Palettes baked from a previous style must not be
 // reused, so track which gtx the registry belongs to and reset when it changes.
+// The gtx pointer alone is not enough: the freed frontend gtx can be reallocated at
+// the same address for the game gtx, so also track a per-load generation counter.
 static const void* sBridgePaletteOwner = nullptr;
+#if defined(GTA2_MODERN_BUILD)
+static u32 sBridgePaletteGeneration = 0;
+#endif
 
 static void Bridge_ResetPalettesIfOwnerChanged() {
     const void* owner = reinterpret_cast<const void*>(gGtx_0x106C_703DD4);
+#if defined(GTA2_MODERN_BUILD)
+    const u32 gen = gGtxPaletteGeneration_0x;
+    if (owner != sBridgePaletteOwner || gen != sBridgePaletteGeneration) {
+        sBridgePalettes.clear();
+        sBridgePaletteOwner = owner;
+        sBridgePaletteGeneration = gen;
+    }
+#else
     if (owner != sBridgePaletteOwner) {
         sBridgePalettes.clear();
         sBridgePaletteOwner = owner;
     }
+#endif
 }
 
 static u32 Bridge_gbh_RegisterPalette(s32 palId, DWORD* pData) {

@@ -6,7 +6,10 @@
 #include <cstring>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -18,6 +21,43 @@
 // resolved at runtime via OpenGLRenderer::SetProcLoader().
 // ---------------------------------------------------------------------------
 namespace {
+
+// ---- Comprehensive texture/draw logger (GTA2_DUMP_ALL=<path>) --------------
+// Appends a compact, human-readable record of every texture register/update
+// (with a colour signature) and every draw (with the drawn texture's signature
+// and on-screen box) to one file, so a long run can be inspected afterwards.
+static std::unordered_map<unsigned int, std::string>& TexSigMap() {
+    static std::unordered_map<unsigned int, std::string> m;
+    return m;
+}
+static FILE* gDumpAllFile() {
+    static FILE* f = nullptr;
+    static bool init = false;
+    if (!init) {
+        init = true;
+        const char* p = getenv("GTA2_DUMP_ALL");
+        if (p) f = std::fopen(p, "w");
+    }
+    return f;
+}
+static std::string TexSignature(const u32* px, u16 w, u16 h) {
+    size_t transp = 0, white = 0, yellow = 0, black = 0, other = 0;
+    const size_t n = static_cast<size_t>(w) * h;
+    for (size_t i = 0; i < n; ++i) {
+        const u32 c = px[i];
+        const u8 r = c & 0xFF, g = (c >> 8) & 0xFF, b = (c >> 16) & 0xFF, a = (c >> 24) & 0xFF;
+        if (a == 0) { ++transp; }
+        else if (r > 240 && g > 240 && b > 240) { ++white; }
+        else if (r > 180 && g > 180 && b < 90) { ++yellow; }
+        else if (r < 30 && g < 30 && b < 30) { ++black; }
+        else { ++other; }
+    }
+    char buf[160];
+    std::snprintf(buf, sizeof(buf),
+                  "%zux%zu T=%zu W=%zu Y=%zu K=%zu O=%zu", w, h,
+                  transp, white, yellow, black, other);
+    return std::string(buf);
+}
 
 using GLenum = unsigned int;
 using GLbitfield = unsigned int;
@@ -66,6 +106,14 @@ constexpr GLenum GL_UNPACK_ALIGNMENT = 0x0CF5;
 constexpr GLenum GL_PACK_ALIGNMENT = 0x0D05;
 constexpr GLenum GL_RGB = 0x1907;
 constexpr GLenum GL_RGBA8 = 0x8058;
+constexpr GLenum GL_BLEND_SRC_RGB = 0x8C80;
+constexpr GLenum GL_BLEND_DST_RGB = 0x8C88;
+constexpr GLenum GL_BLEND_EQUATION_RGB = 0x8009;
+constexpr GLenum GL_FRAMEBUFFER_SRGB = 0x8DB9;
+constexpr GLenum GL_FRAMEBUFFER_BINDING = 0x8CA6;
+constexpr GLenum GL_VIEWPORT = 0x0BA2;
+constexpr GLenum GL_SCISSOR_TEST = 0x0C11;
+constexpr GLenum GL_COLOR_WRITEMASK = 0x0C23;
 
 // GL entry points (resolved at runtime).
 struct GLFunctions {
@@ -117,6 +165,9 @@ struct GLFunctions {
     void (*glClearColor)(GLfloat, GLfloat, GLfloat, GLfloat);
     void (*glViewport)(GLint, GLint, GLsizei, GLsizei);
     GLenum (*glGetError)();
+    void (*glGetIntegerv)(GLenum, GLint*);
+    GLboolean (*glIsEnabled)(GLenum);
+    void (*glGetBooleanv)(GLenum, GLboolean*);
 };
 
 GLFunctions g_gl = {};
@@ -125,6 +176,32 @@ void* (*g_procLoader)(const char* name) = nullptr;
 template <typename T>
 void LoadProc(T& slot, const char* name) {
     slot = reinterpret_cast<T>(g_procLoader(name));
+}
+
+// Compact dump of the GL state that affects colour output, so a menu->game
+// state leak (blend func/equation, sRGB, colour mask, scissor, FBO) shows up as
+// a difference between otherwise-identical draw streams.
+static std::string GlStateString() {
+    if (!g_gl.glGetIntegerv) return "(no glGetIntegerv)";
+    GLint blendSrc = 0, blendDst = 0, blendEq = 0, srgb = 0, fbo = 0, vp[4] = {0, 0, 0, 0};
+    g_gl.glGetIntegerv(GL_BLEND_SRC_RGB, &blendSrc);
+    g_gl.glGetIntegerv(GL_BLEND_DST_RGB, &blendDst);
+    g_gl.glGetIntegerv(GL_BLEND_EQUATION_RGB, &blendEq);
+    g_gl.glGetIntegerv(GL_FRAMEBUFFER_SRGB, &srgb);
+    g_gl.glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+    g_gl.glGetIntegerv(GL_VIEWPORT, vp);
+    GLboolean blendEn = g_gl.glIsEnabled ? g_gl.glIsEnabled(GL_BLEND) : 0;
+    GLboolean scissorEn = g_gl.glIsEnabled ? g_gl.glIsEnabled(GL_SCISSOR_TEST) : 0;
+    GLboolean depthEn = g_gl.glIsEnabled ? g_gl.glIsEnabled(GL_DEPTH_TEST) : 0;
+    GLboolean cm[4] = {1, 1, 1, 1};
+    if (g_gl.glGetBooleanv) g_gl.glGetBooleanv(GL_COLOR_WRITEMASK, cm);
+    char buf[256];
+    std::snprintf(buf, sizeof(buf),
+                  "blend=%d src=0x%x dst=0x%x eq=0x%x srgb=%d fbo=%d vp=%d,%d,%d,%d "
+                  "scissor=%d depth=%d cmask=%d%d%d%d",
+                  blendEn, blendSrc, blendDst, blendEq, srgb, fbo, vp[0], vp[1], vp[2], vp[3],
+                  scissorEn, depthEn, cm[0], cm[1], cm[2], cm[3]);
+    return std::string(buf);
 }
 
 const char* const kVertexShaderSrc =
@@ -223,6 +300,9 @@ bool LoadAllGL() {
     LoadProc(g_gl.glClearColor, "glClearColor");
     LoadProc(g_gl.glViewport, "glViewport");
     LoadProc(g_gl.glGetError, "glGetError");
+    LoadProc(g_gl.glGetIntegerv, "glGetIntegerv");
+    LoadProc(g_gl.glIsEnabled, "glIsEnabled");
+    LoadProc(g_gl.glGetBooleanv, "glGetBooleanv");
 
     return g_gl.glCreateProgram && g_gl.glDrawArrays && g_gl.glBindTexture;
 }
@@ -351,6 +431,13 @@ void OpenGLRenderer::BeginScene() {
     if (!mReady) {
         return;
     }
+    // Diagnostic: keep only the most recent frame's draw log so the file always
+    // holds the frame currently on screen when the program is stopped.
+    if (const char* dumpPath = getenv("GTA2_DUMP_DRAW")) {
+        if (FILE* tf = std::fopen(dumpPath, "w")) {
+            std::fclose(tf);
+        }
+    }
     g_gl.glUseProgram(mProgram);
 
     s32 winW = 640, winH = 480;
@@ -413,6 +500,55 @@ void OpenGLRenderer::DrawPrimitive(const HalVertex* verts, int count, unsigned i
 
     auto it = mTextures.find(texture);
     const bool hasTexture = (it != mTextures.end());
+
+    if (const char* dumpPath = getenv("GTA2_DUMP_DRAW")) {
+        FILE* df = std::fopen(dumpPath, "a");
+        if (df) {
+            float minx = verts[0].x, maxx = verts[0].x;
+            float miny = verts[0].y, maxy = verts[0].y;
+            for (int i = 1; i < count; ++i) {
+                if (verts[i].x < minx) minx = verts[i].x;
+                if (verts[i].x > maxx) maxx = verts[i].x;
+                if (verts[i].y < miny) miny = verts[i].y;
+                if (verts[i].y > maxy) maxy = verts[i].y;
+            }
+            const u32 diff = verts[0].diff;
+            const u8 dA = (diff >> 24) & 0xFF, dR = (diff >> 16) & 0xFF;
+            const u8 dG = (diff >> 8) & 0xFF, dB = diff & 0xFF;
+            std::fprintf(df,
+                         "tex=%u flags=0x%x blend=%d tint=%02x%02x%02x%02x "
+                         "box=(%.0f,%.0f)-(%.0f,%.0f)\n",
+                         texture, flags,
+                         (flags & 0x200) ? 2 : (flags & 0x2000) ? 3
+                             : ((flags & 0x180) || (flags & 0x80)) ? 1 : 0,
+                         dR, dG, dB, dA, minx, miny, maxx, maxy);
+            std::fclose(df);
+        }
+    }
+
+    // Comprehensive append-only draw record (GTA2_DUMP_ALL): includes the drawn
+    // texture's colour signature so on-screen sprites can be classified.
+    if (FILE* df = gDumpAllFile()) {
+        float minx = verts[0].x, maxx = verts[0].x;
+        float miny = verts[0].y, maxy = verts[0].y;
+        for (int i = 1; i < count; ++i) {
+            if (verts[i].x < minx) minx = verts[i].x;
+            if (verts[i].x > maxx) maxx = verts[i].x;
+            if (verts[i].y < miny) miny = verts[i].y;
+            if (verts[i].y > maxy) maxy = verts[i].y;
+        }
+        const u32 diff = verts[0].diff;
+        const u8 dA = (diff >> 24) & 0xFF, dR = (diff >> 16) & 0xFF;
+        const u8 dG = (diff >> 8) & 0xFF, dB = diff & 0xFF;
+        const std::string& sig = TexSigMap()[texture];
+        std::fprintf(df,
+                     "DRAW tex=%u blend=%d tint=%02x%02x%02x%02x box=(%.0f,%.0f)-(%.0f,%.0f) [%s] %s\n",
+                     texture,
+                     (flags & 0x200) ? 2 : (flags & 0x2000) ? 3
+                         : ((flags & 0x180) || (flags & 0x80)) ? 1 : 0,
+                     dR, dG, dB, dA, minx, miny, maxx, maxy, sig.c_str(), GlStateString().c_str());
+        std::fflush(df);
+    }
 
     // Normalize texture coordinates from pixel space [0, texW]x[0, texH] to [0.0, 1.0]
     std::vector<HalVertex> normVerts(verts, verts + count);
@@ -560,6 +696,39 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
                       static_cast<GLsizei>(desc.width), static_cast<GLsizei>(desc.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
 
+    if (getenv("GTA2_DUMP_TEX") && uploadPixels) {
+        const u32* px = static_cast<const u32*>(uploadPixels);
+        const size_t mid = (static_cast<size_t>(desc.width) * desc.height) / 2;
+        const u32 c = px[mid];
+        std::fprintf(stderr, "[TEX] h=%u %ux%u bpp=%u pal=%s mid=%02x%02x%02x%02x\n",
+                     mNextTextureHandle, desc.width, desc.height, desc.bitsPerPixel,
+                     desc.pPaletteRGBA ? "RGBA32" : (desc.pPalette ? "pal16" : "none"),
+                     (c >> 0) & 0xFF, (c >> 8) & 0xFF, (c >> 16) & 0xFF, (c >> 24) & 0xFF);
+    }
+
+    // Dump the full RGBA texture for a chosen handle (GTA2_DUMP_TEX_H=<n>) as a
+    // PPM so the palette contents can be inspected.
+    if (const char* want = getenv("GTA2_DUMP_TEX_H")) {
+        if (atoi(want) == static_cast<int>(mNextTextureHandle) && uploadPixels) {
+            char path[1100];
+            std::snprintf(path, sizeof(path), "%s/tex_%d.ppm", getenv("GTA2_DUMP_TEX_DIR") ? getenv("GTA2_DUMP_TEX_DIR") : ".", static_cast<int>(mNextTextureHandle));
+            if (FILE* tf = std::fopen(path, "wb")) {
+                const u32* px = static_cast<const u32*>(uploadPixels);
+                std::fprintf(tf, "P6\n%u %u\n255\n", desc.width, desc.height);
+                for (u16 y = 0; y < desc.height; ++y) {
+                    for (u16 x = 0; x < desc.width; ++x) {
+                        const u32 c = px[static_cast<size_t>(y) * desc.width + x];
+                        const u8 rgb[3] = {static_cast<u8>(c & 0xFF), static_cast<u8>((c >> 8) & 0xFF),
+                                           static_cast<u8>((c >> 16) & 0xFF)};
+                        std::fwrite(rgb, 1, 3, tf);
+                    }
+                }
+                std::fclose(tf);
+                std::fprintf(stderr, "[TEX] dumped handle %d to %s\n", static_cast<int>(mNextTextureHandle), path);
+            }
+        }
+    }
+
     const TextureHandle handle = mNextTextureHandle++;
     TexInfo info{};
     info.glId = id;
@@ -572,6 +741,15 @@ TextureHandle OpenGLRenderer::RegisterTexture(const TextureDesc& desc) {
     info.pPixels = desc.pPixels;
     info.srcStride = desc.srcStride;
     mTextures[handle] = info;
+
+    if (FILE* df = gDumpAllFile()) {
+        std::string sig;
+        if (uploadPixels) sig = TexSignature(static_cast<const u32*>(uploadPixels), desc.width, desc.height);
+        TexSigMap()[handle] = sig;
+        std::fprintf(df, "TEX h=%u bpp=%u pal=%s %s\n", handle, desc.bitsPerPixel,
+                     desc.pPaletteRGBA ? "RGBA32" : (desc.pPalette ? "pal16" : "none"), sig.c_str());
+        std::fflush(df);
+    }
 
     return handle;
 }
@@ -630,6 +808,25 @@ void OpenGLRenderer::UpdateTexture(TextureHandle handle, const void* pPixels, co
     g_gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
                       static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height), 0,
                       GL_RGBA, GL_UNSIGNED_BYTE, uploadPixels);
+
+    if (getenv("GTA2_DUMP_TEX") && uploadPixels) {
+        const u32* px = static_cast<const u32*>(uploadPixels);
+        const size_t mid = (static_cast<size_t>(info.width) * info.height) / 2;
+        const u32 c = px[mid];
+        std::fprintf(stderr, "[TEX-UPD] %ux%u bpp=%u pal=%s mid=%02x%02x%02x%02x\n",
+                     info.width, info.height, info.bitsPerPixel,
+                     info.pPaletteRGBA ? "RGBA32" : (info.pPalette ? "pal16" : "none"),
+                     (c >> 0) & 0xFF, (c >> 8) & 0xFF, (c >> 16) & 0xFF, (c >> 24) & 0xFF);
+    }
+
+    if (FILE* df = gDumpAllFile()) {
+        std::string sig;
+        if (uploadPixels) sig = TexSignature(static_cast<const u32*>(uploadPixels), info.width, info.height);
+        TexSigMap()[handle] = sig;
+        std::fprintf(df, "UPD h=%u bpp=%u pal=%s %s\n", handle, info.bitsPerPixel,
+                     info.pPaletteRGBA ? "RGBA32" : (info.pPalette ? "pal16" : "none"), sig.c_str());
+        std::fflush(df);
+    }
 }
 
 void OpenGLRenderer::UnregisterTexture(TextureHandle handle) {
@@ -698,8 +895,27 @@ bool OpenGLRenderer::CaptureScreenshot(const char* ppmPath) {
     for (int y = h - 1; y >= 0; --y) {
         std::fwrite(&pixels[static_cast<size_t>(y) * rowBytes], 1, rowBytes, fp);
     }
-    std::fclose(fp);
+    fclose(fp);
     std::fprintf(stderr, "[Screenshot] Captured %dx%d to %s\n", w, h, ppmPath);
+
+    // Diagnostic: also dump the FRONT buffer (what is actually displayed) so we
+    // can tell a render bug from a swap/present/compositor bug.
+    if (getenv("GTA2_CAPTURE_FRONT") && g_gl.glReadBuffer) {
+        std::vector<u8> frontPixels(static_cast<size_t>(w) * h * 3);
+        g_gl.glReadBuffer(GL_FRONT);
+        g_gl.glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, frontPixels.data());
+        g_gl.glReadBuffer(GL_BACK);
+        char frontPath[1200];
+        std::snprintf(frontPath, sizeof(frontPath), "%s.front.ppm", ppmPath);
+        FILE* ff = std::fopen(frontPath, "wb");
+        if (ff) {
+            std::fprintf(ff, "P6\n%d %d\n255\n", w, h);
+            for (int y = h - 1; y >= 0; --y) {
+                std::fwrite(&frontPixels[static_cast<size_t>(y) * rowBytes], 1, rowBytes, ff);
+            }
+            fclose(ff);
+        }
+    }
     return true;
 }
 

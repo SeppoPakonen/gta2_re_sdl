@@ -88,25 +88,31 @@ int __cdecl fgetc(FILE* f)
 // called we never "return" to the hook manager code nor ever remove any hooks therefore
 // this shouldn't be a problem but is something to be aware of.
 #if defined(GTA2_MODERN_BUILD)
+// Zero-initialise allocations in the modern build. Legacy code frequently reads
+// fields before writing them (e.g. Game sub-objects, gang names, camera state);
+// on a fresh heap this is usually 0, but after the menu has run the heap holds
+// garbage, which then leaks into rendering. Zeroing makes it deterministic.
 void* operator new(size_t n)
+{
+    return std::calloc(1, n);
+}
+void* operator new[](size_t s)
+{
+    return std::calloc(1, s);
+}
 #else
 void* operator new(size_t n) throw(std::bad_alloc)
-#endif
 {
     return crt::malloc(n);
 }
+void* operator new[](size_t s) throw(std::bad_alloc)
+{
+    return crt::malloc(s);
+}
+#endif
 void operator delete(void* p) noexcept
 {
     crt::free(p);
-}
-
-#if defined(GTA2_MODERN_BUILD)
-void* operator new[](size_t s)
-#else
-void* operator new[](size_t s) throw(std::bad_alloc)
-#endif
-{
-    return crt::malloc(s);
 }
 
 void operator delete[](void* p) noexcept

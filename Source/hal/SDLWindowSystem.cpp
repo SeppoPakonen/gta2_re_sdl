@@ -1,6 +1,29 @@
 #include "SDLWindowSystem.hpp"
 
+#include <cstdio>
+
 namespace gta2::hal {
+
+// Force a 32-bit (8/8/8/8) colour framebuffer and log the visual depth the
+// driver actually gives us. A 16-bit (RGB565) visual causes banding, darkened
+// midtones and yellow/white colour casts (seen on radeonsi X sessions).
+static void RequestAndLogFramebufferDepth(const char* tag) {
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    int r = -1, g = -1, b = -1, a = -1, d = -1;
+    SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
+    SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
+    SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
+    SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, &a);
+    SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &d);
+    std::fprintf(stderr, "[FB] %s framebuffer R=%d G=%d B=%d A=%d D=%d%s\n", tag, r, g, b, a, d,
+                 (r == 8 && g == 8 && b == 8) ? "" : "  <-- NOT 8/8/8!");
+}
 
 #if defined(GTA2_USE_SDL3)
 
@@ -16,12 +39,17 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
     if (fullscreen) {
         flags = static_cast<SDL_WindowFlags>(flags | SDL_WINDOW_FULLSCREEN);
     }
-    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", "0");
+    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", getenv("GTA2_BYPASS_COMPOSITOR") ? "1" : "0");
+    RequestAndLogFramebufferDepth("SDL3 pre-window");
     mWindow = SDL_CreateWindow(title ? title : "GTA2", width, height, flags);
     if (!mWindow) {
         return false;
     }
     mGLContext = SDL_GL_CreateContext(mWindow);
+    // Sync swaps to the display refresh. Without vsync the menu's double buffer is
+    // presented mid-draw on GPU-backed GL, which reads as flicker/tearing.
+    SDL_GL_SetSwapInterval(1);
+    RequestAndLogFramebufferDepth("SDL3 post-context");
     return mGLContext != nullptr;
 }
 
@@ -149,7 +177,8 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
     if (fullscreen) {
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
-    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", "0");
+    SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", getenv("GTA2_BYPASS_COMPOSITOR") ? "1" : "0");
+    RequestAndLogFramebufferDepth("SDL2 pre-window");
     mWindow = SDL_CreateWindow(title ? title : "GTA2",
                                SDL_WINDOWPOS_CENTERED,
                                SDL_WINDOWPOS_CENTERED,
@@ -160,6 +189,8 @@ bool SDLWindowSystem::Initialize(const char* title, s32 width, s32 height, bool 
         return false;
     }
     mGLContext = SDL_GL_CreateContext(mWindow);
+    SDL_GL_SetSwapInterval(1);
+    RequestAndLogFramebufferDepth("SDL2 post-context");
     return mGLContext != nullptr;
 }
 

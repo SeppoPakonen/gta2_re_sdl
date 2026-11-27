@@ -772,6 +772,14 @@ Camera::Camera()
     SetScreenSize_4361B0(640, 480);
     field_44_suspicion = 0;
     ResetPanning_436830();
+#if defined(GTA2_MODERN_BUILD)
+    // Modern build: IsPointInViewBounds_40CF60 reads the view bounds before
+    // RefreshBoundaries populates them; the original relied on a zeroed heap.
+    field_78_view_bounds.field_0_left = kZero_676818;
+    field_78_view_bounds.field_4_right = kZero_676818;
+    field_78_view_bounds.field_8_top = kZero_676818;
+    field_78_view_bounds.field_C_bottom = kZero_676818;
+#endif
 }
 
 MATCH_FUNC(0x4369E0)

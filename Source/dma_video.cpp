@@ -75,7 +75,17 @@ static s32 Bridge_pVid_SetGamma(SVideo* /*pVid*/, f32 r, f32 g, f32 b) {
     return 0;
 }
 
-static s32 Dummy_ClearScreen(SVideo*, u8, u8, u8, s32, s32, s32, s32) { return 0; }
+static s32 Bridge_pVid_ClearScreen(SVideo* /*pVid*/, u8 r, u8 g, u8 b, s32 /*x*/, s32 /*y*/,
+                                   s32 /*w*/, s32 /*h*/) {
+    gta2::hal::IRenderer* pRend = gta2::hal::GetHal().pRenderer;
+    if (pRend) {
+        const unsigned int argb = (0xFFu << 24) | (static_cast<unsigned int>(r) << 16) |
+                                  (static_cast<unsigned int>(g) << 8) | static_cast<unsigned int>(b);
+        pRend->Clear(argb);
+    }
+    return 0;
+}
+
 static void Dummy_FreeSurface(SVideo*) {}
 static s32 Dummy_GetSurface(SVideo*) { return 0; }
 
@@ -90,7 +100,7 @@ s32 DMA_Video_LoadDll_5EB970(const char* /*lpLibFileName*/)
     pVid_SetMode = Bridge_pVid_SetMode;
     pVid_FlipBuffers = Bridge_pVid_FlipBuffers;
     pVid_SetGamma = Bridge_pVid_SetGamma;
-    pVid_ClearScreen = Dummy_ClearScreen;
+    pVid_ClearScreen = Bridge_pVid_ClearScreen;
     pVid_FreeSurface = Dummy_FreeSurface;
     pVid_GetSurface = Dummy_GetSurface;
     return 0;

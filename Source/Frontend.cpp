@@ -3310,6 +3310,11 @@ void Frontend::Load_tga_4B6520(u16 idx)
 MATCH_FUNC(0x4AF2A0)
 Frontend::Frontend()
 {
+#if defined(GTA2_MODERN_BUILD)
+    // Modern build: the menu reads field_8_keys before the first input poll;
+    // the original relied on a zeroed heap.
+    memset(field_8_keys, 0, sizeof(field_8_keys));
+#endif
     SetField10D_453A30(1);
 
     gText_0x14_704DFC = new TextTable();

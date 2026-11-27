@@ -8,6 +8,15 @@
 #include <windows.h>
 #endif
 
+#if defined(GTA2_MODERN_BUILD)
+// Incremented every time a gtx loads its physical palettes. The rendering bridge
+// uses it to detect a new style instance even when the allocator hands back the
+// same address for the frontend's gtx and the game's gtx (pointer reuse would
+// otherwise defeat the owner check and leave stale menu palettes baked into
+// car textures).
+extern u32 gGtxPaletteGeneration_0x;
+#endif
+
 struct palette_base
 {
     u16 field_0_tile;
