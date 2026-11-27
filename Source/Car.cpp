@@ -311,7 +311,13 @@ struct CarThreadTriggerCmd : SCR_CMD_HEADER
     union
     {
         u16 field_8_idx;
+#if defined(GTA2_MODERN_BUILD)
+        // 4-byte side-table overlay so the union stays 4 bytes (a raw pointer would be 8
+        // bytes on 64-bit and shift field_24_char_idx from 0x24 to 0x28, corrupting reads).
+        ScriptRuntimePtr<ScriptThread> field_8_thread;
+#else
         ScriptThread* field_8_thread;
+#endif
     };
     u16 field_C_thread_id;
     s16 field_E_thread_start_cmd;
