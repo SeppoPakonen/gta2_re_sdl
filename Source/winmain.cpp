@@ -73,6 +73,10 @@ void Gta2_CommonInit() {
 #include "sprite.hpp"
 #include "TextTable.hpp"
 
+#if defined(GTA2_MODERN_BUILD)
+namespace gta2 { extern bool gSkipIntro_Requested; }
+#endif
+
 DEFINE_GLOBAL(u8, gNetDisconnectPlayersBits_6F56B8, 0x6F56B8); // TODO: move
 DEFINE_GLOBAL(u32, gNetworkPlayerIdx_6F56C8, 0x6F56C8); // TODO: move
 DEFINE_GLOBAL(u32, gPlayerQuit_6F5AEC, 0x6F5AEC); // TODO: move
@@ -2344,7 +2348,11 @@ s32 __stdcall WinMain_5E53F0(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR
     Init_keybrd_jolly_and_sound_4DA440();
 
     s32 state;
+#if defined(GTA2_MODERN_BUILD)
+    if (Frontend::intro_bik_exists_4B5FF0() && !gta2::gSkipIntro_Requested)
+#else
     if (Frontend::intro_bik_exists_4B5FF0())
+#endif
     {
         state = gRegistry_6FF968.Get_Screen_Setting_5870D0("do_play_movie", 1) != 1 ? MENUPAGE_START_MENU : MENUPAGE_PLAY_INTRO;
     }

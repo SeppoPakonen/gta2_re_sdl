@@ -18,6 +18,10 @@ EXTERN_GLOBAL(u8, bReplayMode_6F5B71);
 
 namespace gta2 {
 
+// Set by the --skipintro command line flag; read by the frontend to jump
+// straight to the start menu instead of playing the intro movie.
+bool gSkipIntro_Requested = false;
+
 bool EngineRunner::Initialize(int argc, char** argv) {
     auto& ctx = hal::GetHal();
     if (ctx.pFileSystem) {
@@ -60,6 +64,8 @@ bool EngineRunner::Initialize(int argc, char** argv) {
             bReplayMode_6F5B71 = 0;
         } else if (arg == "--demo") {
             bReplayMode_6F5B71 = 1;
+        } else if (arg == "--skipintro" || arg == "--skip-intro" || arg == "--no-intro") {
+            gSkipIntro_Requested = true;
         }
     }
 
@@ -70,6 +76,11 @@ bool EngineRunner::Initialize(int argc, char** argv) {
     }
     audioBackend.Initialize(22050, 2, 1024);
     inputBackend.Initialize();
+
+    // Finalize the HAL context (selects the movie player, default VFS, etc.).
+    // The individual backends were assigned above; this fills in the rest.
+    ctx.Initialize("SDL");
+
     DMA_Video_LoadDll_5EB970(nullptr);
     GBH_GraphicsInit_Modern();
 

@@ -1,4 +1,5 @@
 #include "FFmpegMoviePlayer.hpp"
+#include "HalContext.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -34,15 +35,24 @@ bool FFmpegMoviePlayer::Open(const char* moviePath, IRenderer* pRenderer, IAudio
     mRenderer = pRenderer;
     mAudio = pAudio;
 
-    FILE* probe = fopen(moviePath, "rb");
+    // The game passes a virtual Windows-style path (e.g. "Movie\\intro.bik");
+    // resolve it through the VFS so the real asset (including the wine install)
+    // is found regardless of the current working directory.
+    std::string resolved;
+    if (auto pFs = GetHal().pFileSystem) {
+        resolved = pFs->ResolvePath(moviePath);
+    }
+    const char* realPath = resolved.empty() ? moviePath : resolved.c_str();
+
+    FILE* probe = fopen(realPath, "rb");
     if (!probe) {
-        GTA2_VLOG("[HAL] FFmpegMoviePlayer: '%s' not found, skipping\n", moviePath);
+        GTA2_VLOG("[HAL] FFmpegMoviePlayer: '%s' (resolved '%s') not found, skipping\n", moviePath, realPath);
         mFinished = true;
         return false;
     }
     fclose(probe);
 
-    int rc = avformat_open_input(&mFmt, moviePath, nullptr, nullptr);
+    int rc = avformat_open_input(&mFmt, realPath, nullptr, nullptr);
     if (rc < 0) {
         LogAvError("avformat_open_input", rc);
         mFinished = true;

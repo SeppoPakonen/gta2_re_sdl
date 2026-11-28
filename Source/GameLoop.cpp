@@ -29,6 +29,8 @@
 #include <cstdio>
 #include <string>
 
+namespace gta2 { extern bool gSkipIntro_Requested; }
+
 // Game loop state global definitions.
 DEFINE_GLOBAL(u32, gMatchStartTime_6F5A28, 0x6F5A28);
 DEFINE_GLOBAL(u8, gFramesSinceDraw_6F58D8, 0x6F58D8);
@@ -167,7 +169,16 @@ void GameLoop_Initialize() {
         bDoFrontEnd_626B68 = 1;
         Frontend::create_4ACFA0();
         if (gFrontend_67DC84) {
-            gFrontend_67DC84->ChangeMenuPage_4B3170(MENUPAGE_START_MENU);
+            // Play the intro movie by default (the original WinMain did this);
+            // --skipintro jumps straight to the start menu. Existence is probed
+            // through the VFS (the legacy _findfirst only checks the CWD).
+            u16 startPage = MENUPAGE_START_MENU;
+            auto pFs = gta2::hal::GetHal().pFileSystem;
+            const bool bIntroExists = pFs && pFs->FileExists("Movie\\intro.bik");
+            if (!gta2::gSkipIntro_Requested && bIntroExists) {
+                startPage = MENUPAGE_PLAY_INTRO;
+            }
+            gFrontend_67DC84->ChangeMenuPage_4B3170(startPage);
             if (const char* pStartPage = std::getenv("GTA2_START_PAGE")) {
                 u8 menu_screen = static_cast<u8>(std::atoi(pStartPage));
                 u16 option_idx;
