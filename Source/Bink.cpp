@@ -27,7 +27,18 @@ bool Bink::TickFrame_513240()
 {
     if (auto pMovie = gta2::hal::GetHal().pMovie)
     {
-        return pMovie->TickFrame();
+        bool bMore = pMovie->TickFrame();
+        if (bMore)
+        {
+            // The original Bink library blitted each decoded frame to the screen
+            // itself; here the HAL movie player renders the frame and we flip.
+            pMovie->RenderFrame();
+            if (auto pWin = gta2::hal::GetHal().pWindow)
+            {
+                pWin->SwapBuffers();
+            }
+        }
+        return bMore;
     }
     return false;
 }
