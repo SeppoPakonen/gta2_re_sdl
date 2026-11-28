@@ -45,15 +45,23 @@ bool Bink::TickFrame_513240()
 MATCH_FUNC(0x513340)
 void Bink::CloseSlot1_513340()
 {
-    // Single shared movie player in the modern build: closing a slot must not
-    // tear down the movie the other slot is playing (the intro switch opens
-    // slot 2 and then closes slot 1). The real close happens on Reset/finish.
+    // Single shared movie player in the modern build. The intro switch opens
+    // slot 2 (which closes the old movie) and then closes slot 1, so closing
+    // slot 1 must not tear down the movie slot 2 just started. The real stop
+    // happens in CloseSlot2 / Reset.
     gBinkActiveSlot_6F83FF = 0;
 }
 
 MATCH_FUNC(0x513390)
 void Bink::CloseSlot2_513390()
 {
+    // Slot 2 owns the shared player in the modern build: stop playback (and the
+    // movie audio) here. This is the path the frontend takes to leave the intro
+    // on finish or when the user skips it.
+    if (auto pMovie = gta2::hal::GetHal().pMovie)
+    {
+        pMovie->Close();
+    }
     gBinkActiveSlot_6F83FF = 0;
 }
 

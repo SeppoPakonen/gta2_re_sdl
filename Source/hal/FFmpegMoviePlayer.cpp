@@ -385,20 +385,6 @@ bool FFmpegMoviePlayer::TickFrame() {
     }
     ++mFrameCount;
 
-    // Debug: cap the movie length to exercise the finish->menu transition.
-    if (const char* pMax = std::getenv("GTA2_MOVIE_MAX_FRAMES")) {
-        if (mFrameCount >= static_cast<u32>(std::atoi(pMax))) {
-            mFinished = true;
-            if (mChannel != kInvalidChannelHandle && mAudio) {
-                mAudio->StopChannel(mChannel);
-                mChannel = kInvalidChannelHandle;
-            }
-            GTA2_VLOG("[HAL] FFmpegMoviePlayer: capped after %u frames at %llums\n",
-                      mFrameCount, (unsigned long long)UptimeMs());
-            return false;
-        }
-    }
-
     // Pace playback to the movie's frame rate (the original BinkWait did this).
     if (mFrameInterval > 0.0) {
         const auto now = std::chrono::steady_clock::now();

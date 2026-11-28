@@ -55,7 +55,9 @@ bool SDLAudioBackend::Initialize(s32 sampleRate, s32 channels, s32 bufferSize) {
     SDL_PauseAudioDevice(mAudioDevice, 0);
     mInitialized = true;
     mMasterVolume = 1.0f;
-    mDeviceSampleRate = 22050;
+    // Use the rate the device actually opened at (not a hardcoded value), so
+    // per-channel resampling produces correct pitch/speed on any device.
+    mDeviceSampleRate = obtained.freq > 0 ? obtained.freq : sampleRate;
     return true;
 #endif
 }
