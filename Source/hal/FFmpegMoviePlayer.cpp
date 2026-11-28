@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <thread>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -43,6 +45,7 @@ bool FFmpegMoviePlayer::Open(const char* moviePath, IRenderer* pRenderer, IAudio
         resolved = pFs->ResolvePath(moviePath);
     }
     const char* realPath = resolved.empty() ? moviePath : resolved.c_str();
+    mResolvedPath = realPath;
 
     FILE* probe = fopen(realPath, "rb");
     if (!probe) {
@@ -140,7 +143,21 @@ bool FFmpegMoviePlayer::Open(const char* moviePath, IRenderer* pRenderer, IAudio
     DecodeAudioAll();
 
     mFinished = false;
-    GTA2_VLOG("[HAL] FFmpegMoviePlayer: opened '%s' (%dx%d)\n", moviePath, mWidth, mHeight);
+    mFrameCount = 0;
+    mClockInit = false;
+
+    // Frame pacing: use the stream's average frame rate, else 30 fps.
+    AVRational fr = mFmt->streams[mVideoStream]->avg_frame_rate;
+    if (fr.num <= 0 || fr.den <= 0) {
+        fr = mFmt->streams[mVideoStream]->r_frame_rate;
+    }
+    if (fr.num <= 0 || fr.den <= 0) {
+        fr = (AVRational){ 30, 1 };
+    }
+    mFrameInterval = (double)fr.den / (double)fr.num;
+
+    GTA2_VLOG("[HAL] FFmpegMoviePlayer: opened '%s' (%dx%d) fps=%.3f at %llums\n",
+              moviePath, mWidth, mHeight, 1.0 / mFrameInterval, (unsigned long long)UptimeMs());
     return true;
 }
 
@@ -182,42 +199,72 @@ void FFmpegMoviePlayer::Close() {
 }
 
 bool FFmpegMoviePlayer::DecodeAudioAll() {
-    if (!mAudioCtx || mAudioStream < 0 || !mAudio) {
+    if (!mAudio) {
         return true;
     }
 
-    AVChannelLayout inLayout = mAudioCtx->ch_layout;
+    // Decode the audio track from a *separate* format context. Bink has no seek
+    // index, so reading the main context to EOF and rewinding would leave the
+    // video stream at EOF (the whole intro would be skipped). A second open
+    // keeps mFmt pristine at the start for video streaming.
+    std::string path = mResolvedPath;
+    AVFormatContext* fmt = nullptr;
+    if (avformat_open_input(&fmt, path.c_str(), nullptr, nullptr) < 0) {
+        GTA2_VLOG("[HAL] FFmpegMoviePlayer: audio re-open failed\n");
+        return false;
+    }
+    avformat_find_stream_info(fmt, nullptr);
+
+    const AVCodec* aDec = nullptr;
+    int aStream = av_find_best_stream(fmt, AVMEDIA_TYPE_AUDIO, -1, -1, &aDec, 0);
+    if (aStream < 0 || !aDec) {
+        avformat_close_input(&fmt);
+        return true; // no audio: fine
+    }
+
+    AVCodecContext* ac = avcodec_alloc_context3(aDec);
+    if (!ac || avcodec_parameters_to_context(ac, fmt->streams[aStream]->codecpar) < 0 ||
+        avcodec_open2(ac, aDec, nullptr) < 0) {
+        if (ac) avcodec_free_context(&ac);
+        avformat_close_input(&fmt);
+        return false;
+    }
+
+    AVChannelLayout inLayout = ac->ch_layout;
     mAudioChannels = inLayout.nb_channels > 0 ? inLayout.nb_channels : 2;
-    mAudioSampleRate = mAudioCtx->sample_rate > 0 ? mAudioCtx->sample_rate : 44100;
+    mAudioSampleRate = ac->sample_rate > 0 ? ac->sample_rate : 44100;
 
     AVChannelLayout outLayout;
     av_channel_layout_default(&outLayout, mAudioChannels);
 
     int swrRc = swr_alloc_set_opts2(&mSwr, &outLayout, AV_SAMPLE_FMT_S16, mAudioSampleRate,
-                                    &inLayout, mAudioCtx->sample_fmt, mAudioSampleRate, 0, nullptr);
+                                    &inLayout, ac->sample_fmt, mAudioSampleRate, 0, nullptr);
     if (swrRc < 0 || !mSwr) {
         LogAvError("swr_alloc_set_opts2", swrRc);
+        av_channel_layout_uninit(&outLayout);
+        avcodec_free_context(&ac);
+        avformat_close_input(&fmt);
         return false;
     }
     if (swr_init(mSwr) < 0) {
         GTA2_VLOG("[HAL] FFmpegMoviePlayer: swr_init failed\n");
+        av_channel_layout_uninit(&outLayout);
+        avcodec_free_context(&ac);
+        avformat_close_input(&fmt);
         return false;
     }
     av_channel_layout_uninit(&outLayout);
 
     AVFrame* decoded = av_frame_alloc();
-    if (!decoded) {
-        return false;
-    }
-
+    AVPacket* apkt = av_packet_alloc();
     int outChStride = av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
     std::vector<u8> outBuf;
     outBuf.resize(static_cast<size_t>(outChStride) * mAudioChannels * 1024);
 
-    while (av_read_frame(mFmt, mPkt) >= 0) {
-        if (mPkt->stream_index == mAudioStream) {
-            if (avcodec_send_packet(mAudioCtx, mPkt) == 0) {
-                while (avcodec_receive_frame(mAudioCtx, decoded) == 0) {
+    while (decoded && apkt && av_read_frame(fmt, apkt) >= 0) {
+        if (apkt->stream_index == aStream) {
+            if (avcodec_send_packet(ac, apkt) == 0) {
+                while (avcodec_receive_frame(ac, decoded) == 0) {
                     int maxOut = av_rescale_rnd(swr_get_delay(mSwr, mAudioSampleRate) + decoded->nb_samples,
                                                 mAudioSampleRate, mAudioSampleRate, AV_ROUND_UP);
                     if (maxOut <= 0) {
@@ -237,25 +284,30 @@ bool FFmpegMoviePlayer::DecodeAudioAll() {
                 }
             }
         }
-        av_packet_unref(mPkt);
+        av_packet_unref(apkt);
     }
 
     // Flush any buffered samples.
-    int maxOut = av_rescale_rnd(swr_get_delay(mSwr, mAudioSampleRate) + 1024,
-                                mAudioSampleRate, mAudioSampleRate, AV_ROUND_UP);
-    if (maxOut > 0) {
-        if (outBuf.size() < static_cast<size_t>(outChStride) * mAudioChannels * maxOut) {
-            outBuf.resize(static_cast<size_t>(outChStride) * mAudioChannels * maxOut);
-        }
-        uint8_t* dst[1] = { outBuf.data() };
-        int outSamples = swr_convert(mSwr, dst, maxOut, nullptr, 0);
-        if (outSamples > 0) {
-            s16* s = reinterpret_cast<s16*>(outBuf.data());
-            mAudioPcm.insert(mAudioPcm.end(), s, s + static_cast<size_t>(outSamples) * mAudioChannels);
+    if (decoded) {
+        int maxOut = av_rescale_rnd(swr_get_delay(mSwr, mAudioSampleRate) + 1024,
+                                    mAudioSampleRate, mAudioSampleRate, AV_ROUND_UP);
+        if (maxOut > 0) {
+            if (outBuf.size() < static_cast<size_t>(outChStride) * mAudioChannels * maxOut) {
+                outBuf.resize(static_cast<size_t>(outChStride) * mAudioChannels * maxOut);
+            }
+            uint8_t* dst[1] = { outBuf.data() };
+            int outSamples = swr_convert(mSwr, dst, maxOut, nullptr, 0);
+            if (outSamples > 0) {
+                s16* s = reinterpret_cast<s16*>(outBuf.data());
+                mAudioPcm.insert(mAudioPcm.end(), s, s + static_cast<size_t>(outSamples) * mAudioChannels);
+            }
         }
     }
 
-    av_frame_free(&decoded);
+    if (decoded) av_frame_free(&decoded);
+    if (apkt)    av_packet_free(&apkt);
+    avcodec_free_context(&ac);
+    avformat_close_input(&fmt);
 
     if (!mAudioPcm.empty()) {
         mSound = mAudio->LoadSampleFromMemory(mAudioPcm.data(),
@@ -265,10 +317,8 @@ bool FFmpegMoviePlayer::DecodeAudioAll() {
             mChannel = mAudio->PlaySample(mSound, 1.0f, 0.0f, false);
         }
     }
-
-    // Rewind for video streaming.
-    avformat_seek_file(mFmt, mVideoStream, INT64_MIN, INT64_MIN, INT64_MIN, AVSEEK_FLAG_FRAME);
-    avcodec_flush_buffers(mVideoCtx);
+    GTA2_VLOG("[HAL] FFmpegMoviePlayer: audio decoded %zu samples (%dch @%dHz) at %llums\n",
+              mAudioPcm.size(), mAudioChannels, mAudioSampleRate, (unsigned long long)UptimeMs());
     return true;
 }
 
@@ -329,7 +379,41 @@ bool FFmpegMoviePlayer::TickFrame() {
             mAudio->StopChannel(mChannel);
             mChannel = kInvalidChannelHandle;
         }
+        GTA2_VLOG("[HAL] FFmpegMoviePlayer: finished after %u frames at %llums\n",
+                  mFrameCount, (unsigned long long)UptimeMs());
         return false;
+    }
+    ++mFrameCount;
+
+    // Debug: cap the movie length to exercise the finish->menu transition.
+    if (const char* pMax = std::getenv("GTA2_MOVIE_MAX_FRAMES")) {
+        if (mFrameCount >= static_cast<u32>(std::atoi(pMax))) {
+            mFinished = true;
+            if (mChannel != kInvalidChannelHandle && mAudio) {
+                mAudio->StopChannel(mChannel);
+                mChannel = kInvalidChannelHandle;
+            }
+            GTA2_VLOG("[HAL] FFmpegMoviePlayer: capped after %u frames at %llums\n",
+                      mFrameCount, (unsigned long long)UptimeMs());
+            return false;
+        }
+    }
+
+    // Pace playback to the movie's frame rate (the original BinkWait did this).
+    if (mFrameInterval > 0.0) {
+        const auto now = std::chrono::steady_clock::now();
+        if (!mClockInit) {
+            mNextFrameClock = now;
+            mClockInit = true;
+        } else {
+            mNextFrameClock += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                std::chrono::duration<double>(mFrameInterval));
+            std::this_thread::sleep_until(mNextFrameClock);
+        }
+    }
+
+    if (mFrameCount == 1) {
+        GTA2_VLOG("[HAL] FFmpegMoviePlayer: frame 1 at %llums\n", (unsigned long long)UptimeMs());
     }
     return true;
 }

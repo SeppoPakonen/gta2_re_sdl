@@ -27,18 +27,17 @@ bool Bink::TickFrame_513240()
 {
     if (auto pMovie = gta2::hal::GetHal().pMovie)
     {
-        bool bMore = pMovie->TickFrame();
-        if (bMore)
+        // HAL contract: TickFrame() returns false once playback has finished.
+        // The frontend expects the opposite (true == finished, so it leaves the
+        // intro page), and the original BinkDoFrame blitted every frame. Render
+        // and flip on every tick, and translate the finished flag.
+        bool bFinished = !pMovie->TickFrame();
+        pMovie->RenderFrame();
+        if (auto pWin = gta2::hal::GetHal().pWindow)
         {
-            // The original Bink library blitted each decoded frame to the screen
-            // itself; here the HAL movie player renders the frame and we flip.
-            pMovie->RenderFrame();
-            if (auto pWin = gta2::hal::GetHal().pWindow)
-            {
-                pWin->SwapBuffers();
-            }
+            pWin->SwapBuffers();
         }
-        return bMore;
+        return bFinished;
     }
     return false;
 }
@@ -46,19 +45,16 @@ bool Bink::TickFrame_513240()
 MATCH_FUNC(0x513340)
 void Bink::CloseSlot1_513340()
 {
-    if (auto pMovie = gta2::hal::GetHal().pMovie)
-    {
-        pMovie->Close();
-    }
+    // Single shared movie player in the modern build: closing a slot must not
+    // tear down the movie the other slot is playing (the intro switch opens
+    // slot 2 and then closes slot 1). The real close happens on Reset/finish.
+    gBinkActiveSlot_6F83FF = 0;
 }
 
 MATCH_FUNC(0x513390)
 void Bink::CloseSlot2_513390()
 {
-    if (auto pMovie = gta2::hal::GetHal().pMovie)
-    {
-        pMovie->Close();
-    }
+    gBinkActiveSlot_6F83FF = 0;
 }
 
 MATCH_FUNC(0x5133E0)
@@ -69,6 +65,7 @@ void __stdcall Bink::OpenSlot2_5133E0(const char_type* pFileName, HDIGDRIVER hDr
     {
         pMovie->Open(pFileName, gta2::hal::GetHal().pRenderer, gta2::hal::GetHal().pAudio);
     }
+    gBinkActiveSlot_6F83FF = 2;
 }
 
 MATCH_FUNC(0x513560)
@@ -79,6 +76,7 @@ void __stdcall Bink::OpenSlot1_513560(const char_type* pFileName, HDIGDRIVER hDr
     {
         pMovie->Open(pFileName, gta2::hal::GetHal().pRenderer, gta2::hal::GetHal().pAudio);
     }
+    gBinkActiveSlot_6F83FF = 1;
 }
 
 MATCH_FUNC(0x5136D0)

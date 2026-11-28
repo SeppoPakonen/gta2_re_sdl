@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 
 struct AVFormatContext;
 struct AVCodecContext;
@@ -53,8 +54,13 @@ private:
 
     s32 mWidth  = 0;
     s32 mHeight = 0;
+    std::string mResolvedPath;
     std::vector<u32> mFrameBuffer; // RGBA8888, mWidth*mHeight
 
+    u32          mFrameCount = 0;
+    double       mFrameInterval = 0.0; // seconds per frame (for pacing)
+    std::chrono::steady_clock::time_point mNextFrameClock;
+    bool         mClockInit = false;
     SoundId      mSound  = kInvalidSoundId;
     ChannelHandle mChannel = kInvalidChannelHandle;
     std::vector<s16> mAudioPcm; // interleaved s16

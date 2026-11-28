@@ -483,6 +483,12 @@ void Frontend::ChangeMenuPage_4B3170(u16 menu_page_idx)
 
     PlySlot* pStats = GetCurrPlayerStats_4B43E0();
     field_132_current_page_idx = menu_page_idx;
+#if defined(GTA2_MODERN_BUILD)
+    if (menu_page_idx == MENUPAGE_START_MENU) {
+        GTA2_VLOG("[MENU] main menu loaded at %llums\n",
+                  (unsigned long long)gta2::hal::UptimeMs());
+    }
+#endif
 
     if (menu_page_idx == MENUPAGE_PARENTAL_CONTROL)
     {
@@ -902,6 +908,11 @@ s32 Frontend::Run_4AEDB0()
         {
             if ((*local_field_8_keys & 0x80u) != 0)
             {
+#if defined(GTA2_MODERN_BUILD)
+                GTA2_VLOG("[INTRO] skipped by key index %ld at %llums\n",
+                          (long)(local_field_8_keys - field_8_keys),
+                          (unsigned long long)gta2::hal::UptimeMs());
+#endif
                 Bink::CloseSlot1_513340();
                 Bink::CloseSlot2_513390();
                 if (bIsFrench_67D53C)

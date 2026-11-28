@@ -5,9 +5,16 @@
 #include "FFmpegMoviePlayer.hpp"
 #endif
 #include "VfsFileSystem.hpp"
+#include <chrono>
 #include <cstdio>
 
 namespace gta2::hal {
+
+u64 UptimeMs() {
+    static const std::chrono::steady_clock::time_point sStart = std::chrono::steady_clock::now();
+    return static_cast<u64>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - sStart).count());
+}
 
 static HalContext sHalInstance;
 static NullMoviePlayer sDefaultMovie;

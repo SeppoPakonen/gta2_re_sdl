@@ -29,4 +29,7 @@ struct HalContext {
 
 HalContext& GetHal();
 
+// Milliseconds since the process started (steady clock); for diagnostic logs.
+u64 UptimeMs();
+
 } // namespace gta2::hal
